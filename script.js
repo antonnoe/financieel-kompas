@@ -8,7 +8,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadConfigAndInit() {
         try {
-            const response = await fetch('config.json');
+            // --- DE CORRECTIE IS HIER: './config.json' ---
+            const response = await fetch('./config.json'); 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -733,7 +734,7 @@ Basisgegevens
 -------------
 Huishouden: ${vals.isCouple ? 'Echtpaar / Partners' : 'Alleenstaande'}
 Minderjarige kinderen: ${vals.children}
-Totaal Vermogen: ${formatCurrency(vals.estate)} (${formatCurrency(vals.wealthFinancial)} fin. / ${formatCurrency(vals.wealthProperty)} vastgoed)
+Totaal Vermogen: ${formatCurrency(vals.estate)} (${formatCurrency(vals.wealthFinancial)} fin. / ${formatCSS(vals.wealthProperty)} vastgoed)
 ${projectionP1}${projectionP2}
 
 ${compareCountryTitle}
