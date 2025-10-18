@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financieel Kompas</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Financieel Kompas</h1>
+            <p>Een scenario-simulator om de financiële impact van wonen in Frankrijk te vergelijken met Nederland of België.</p>
+        </header>
+
+        <div class="privacy-notice">
+            <p>🛡️ <strong>Uw Privacy & Veiligheid Gegarandeerd.</strong> Dit kompas draait volledig op uw eigen computer. Er wordt absoluut geen data opgeslagen of verzonden. Alles wat u invult, blijft 100% anoniem en privé.</p>
+        </div>
+
+        <section id="results-bar" class="sticky">
+            <div class="country-result" id="compare-country-result">
+                <h2><span id="compare-country-label">Als u in Nederland woont</span> <span id="compare-country-flag">🇳🇱</span></h2>
+                <div class="result-metric-detailed">
+                    <span class="detail-line">Huidig Bruto Inkomen: <span id="compare-bruto">€ 0</span></span>
+                    <span class="detail-line">- Geschatte Lasten: <span id="compare-tax">€ 0</span></span>
+                    <span class="detail-line final-net"><strong>= Huidig Netto Inkomen: <span id="compare-netto">€ 0</span></strong></span>
+                </div>
+                <div class="result-metric">
+                    <label>Jaarlijkse Aanslag Vermogen</label>
+                    <span class="result-value" id="wealth-tax-compare">€ 0</span>
+                </div>
+            </div>
+            <div class="country-result" id="result-fr">
+                <h2>Als u in Frankrijk woont 🇫🇷</h2>
+                 <div class="result-metric-detailed">
+                    <span class="detail-line">Huidig Bruto Inkomen: <span id="fr-bruto">€ 0</span></span>
+                    <span class="detail-line">- Geschatte Lasten: <span id="fr-tax">€ 0</span></span>
+                    <span class="detail-line final-net"><strong>= Huidig Netto Inkomen: <span id="fr-netto">€ 0</span></strong></span>
+                </div>
+                <div class="result-metric">
+                    <label>Jaarlijkse Aanslag Vermogen</label>
+                    <span class="result-value" id="wealth-tax-fr">€ 0</span>
+                     <span class="explanation-text" id="wealth-tax-fr-expl"></span>
+                </div>
+            </div>
+             <div class="conclusion-integrated" id="conclusion-bar">
+                 <h3>Financiële Balans (Jaarlijks Netto Verschil)</h3>
+                 <p id="conclusion-value" class="positive">+ € 0</p>
+                 <em id="conclusion-expl">Een positief bedrag duidt op een financieel voordeel in het Franse scenario.</em>
+             </div>
+        </section>
+
+        <section id="input-panel">
+            <div class="module household-choice">
+                <label>Vergelijk Frankrijk met:</label>
+                <div class="choice-buttons">
+                    <button id="btn-nl" class="active">Nederland 🇳🇱</button>
+                    <button id="btn-be">België 🇧🇪</button>
+                </div>
+            </div>
+            
+            <div class="module household-choice">
+                <label>Voor wie stelt u dit scenario op?</label>
+                <div class="choice-buttons">
+                    <button id="btn-single" class="active">Voor een alleenstaande</button>
+                    <button id="btn-couple">Voor een echtpaar / fiscale partners</button>
+                </div>
+            </div>
+
+           
+            <details class="module" open>
+                <summary>Module 1: Inkomen & Situatie</summary>
+                <div class="form-grid" id="income-grid">
+                    </div>
+            </details>
+            <details class="module">
+                <summary>Module 2: Vermogen & Levensstijl</summary>
+                <div class="form-grid">
+                    </div>
+            </details>
+        </section>
+
+       
+        <section id="actions">
+            </section>
+        <div class="faq-container">
+            </div>
+        <footer>
+             </footer>
+    </div>
+
+    <script src="script.js" defer></script>
+</body>
+</html>
