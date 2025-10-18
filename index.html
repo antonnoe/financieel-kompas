@@ -6,9 +6,9 @@
     <title>Financieel Kompas</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        .be-specific { display: none; } /* Standaard BE velden verbergen */
-        .fr-specific.hide-for-be { display: block; } /* FR velden standaard tonen */
-        .nl-specific.hide-for-be { display: block; } /* NL velden standaard tonen */
+        .be-specific { display: none; } 
+        .fr-specific.hide-for-be { display: block; } 
+        .nl-specific.hide-for-be { display: block; } 
     </style>
 </head>
 <body>
@@ -82,11 +82,11 @@
                             <label>Geboortedatum <span class="tooltip" data-text="Uw geboortedatum bepaalt uw pensioenleeftijd en of pensioeninkomsten meetellen.">(?)</span></label>
                             <div> <select id="birth-year-1"></select> <select id="birth-month-1"></select> </div>
                         </div>
-                        <div class="form-group nl-specific"> {/* Class 'nl-specific' toegevoegd */}
+                        <div class="form-group nl-specific"> 
                             <label for="aow-years-1">Jaren AOW-opbouw (NL) <span class="tooltip" data-text="Aantal jaren verzekerd voor AOW (max 50). Bepaalt de hoogte van uw Nederlandse AOW. Let op: totaal NL+FR jaren max 50.">(?)</span>: <span class="slider-value" id="value-aow-years-1">0</span></label>
                             <input type="range" class="slider" id="aow-years-1" min="0" max="50" step="1" value="0">
                         </div>
-                        <div class="form-group fr-specific hide-for-be"> {/* Wordt verborgen voor BE */}
+                        <div class="form-group fr-specific hide-for-be"> 
                             <label for="fr-work-years-1">Werkjaren in Frankrijk <span class="tooltip" data-text="Aantal jaren waarin premies zijn afgedragen in Frankrijk. Bepaalt de hoogte van uw Franse staatspensioen. Let op: totaal NL+FR jaren max 50.">(?)</span>: <span class="slider-value" id="value-fr-work-years-1">0</span></label>
                             <input type="range" class="slider" id="fr-work-years-1" min="0" max="50" step="1" value="0">
                         </div>
@@ -115,7 +115,7 @@
                         </div>
                         <div class="form-group" id="group-business-1">
                              <label>Huidige Winst uit Onderneming</label>
-                            <select id="business-type-1" class="duration-select fr-specific hide-for-be"> {/* Select alleen relevant voor FR */}
+                            <select id="business-type-1" class="duration-select fr-specific hide-for-be"> 
                                 <option value="services">Dienstverlening / Overig</option> <option value="rental">Recreatieve Verhuur (Gîte/B&B)</option>
                             </select>
                             <input type="range" class="slider" id="slider-business-1" min="0" max="300000" step="5000" value="0">
@@ -128,11 +128,11 @@
                             <label>Geboortedatum <span class="tooltip" data-text="De geboortedatum van uw partner bepaalt diens pensioenleeftijd.">(?)</span></label>
                             <div> <select id="birth-year-2"></select> <select id="birth-month-2"></select> </div>
                         </div>
-                        <div class="form-group nl-specific"> {/* Class 'nl-specific' toegevoegd */}
+                        <div class="form-group nl-specific"> 
                             <label for="aow-years-2">Jaren AOW-opbouw (NL) <span class="tooltip" data-text="Aantal jaren verzekerd voor AOW (max 50).">(?)</span>: <span class="slider-value" id="value-aow-years-2">0</span></label>
                             <input type="range" class="slider" id="aow-years-2" min="0" max="50" step="1" value="0">
                         </div>
-                        <div class="form-group fr-specific hide-for-be"> {/* Wordt verborgen voor BE */}
+                        <div class="form-group fr-specific hide-for-be"> 
                             <label for="fr-work-years-2">Werkjaren in Frankrijk <span class="tooltip" data-text="Aantal jaren premies afgedragen in Frankrijk.">(?)</span>: <span class="slider-value" id="value-fr-work-years-2">0</span></label>
                             <input type="range" class="slider" id="fr-work-years-2" min="0" max="50" step="1" value="0">
                         </div>
@@ -161,7 +161,7 @@
                         </div>
                          <div class="form-group" id="group-business-2">
                              <label>Huidige Winst uit Onderneming</label>
-                            <select id="business-type-2" class="duration-select fr-specific hide-for-be"> {/* Select alleen relevant voor FR */}
+                            <select id="business-type-2" class="duration-select fr-specific hide-for-be"> 
                                 <option value="services">Dienstverlening / Overig</option> <option value="rental">Recreatieve Verhuur (Gîte/B&B)</option>
                             </select>
                             <input type="range" class="slider" id="slider-business-2" min="0" max="300000" step="5000" value="0">
@@ -178,11 +178,11 @@
                         <label for="slider-children">Aantal minderjarige kinderen ten laste <span class="tooltip" data-text="Effect verschilt per land (FR: quotient, BE: vrijstelling, NL: toeslagen).">(?)</span>: <span class="slider-value" id="value-children">0</span></label>
                         <input type="range" class="slider" id="slider-children" min="0" max="5" step="1" value="0">
                     </div>
-                    <div class="form-group nl-specific fr-specific hide-for-be"> {/* Zichtbaar voor NL & FR, verborgen voor BE */}
+                    <div class="form-group nl-specific fr-specific hide-for-be"> 
                         <label for="cak-contribution">Betaalt u Zvw-bijdrage aan het CAK? <span class="tooltip" data-text="In Frankrijk aftrekbaar.">(?)</span></label>
                         <input type="checkbox" id="cak-contribution" class="toggle-switch"> 
                     </div>
-                     <div class="form-group full-width fr-specific hide-for-be"> {/* Alleen relevant voor FR */}
+                     <div class="form-group full-width fr-specific hide-for-be"> 
                         <label for="home-help">Jaarlijkse kosten hulp aan huis <span class="tooltip" data-text="In Frankrijk 50% belastingkrediet.">(?)</span></label>
                         <select id="home-help">
                             <option value="0">Nee</option> <option value="1500">Beperkt (€1.500)</option> <option value="3500">Regelmatig (€3.500)</option> <option value="7000">Substantieel (€7.000)</option>
@@ -196,7 +196,6 @@
                         <label for="slider-wealth-property">Vastgoed Vermogen <span class="tooltip" data-text="Waarde onroerend goed (excl. hoofdwoning). Basis FR IFI (> 1.3M€).">(?)</span>: <span class="slider-value" id="value-wealth-property">€ 0</span></label>
                         <input type="range" class="slider" id="slider-wealth-property" min="0" max="5000000" step="50000" value="0">
                     </div>
-                     {/* Voorbeeld BE specifiek veld, correct verborgen met class */}
                      <div class="form-group be-specific"> 
                          <label for="be-example">Voorbeeld Belgisch veld <span class="tooltip" data-text="Alleen zichtbaar als België is geselecteerd.">(?)</span></label>
                          <input type="text" id="be-example" placeholder="Specifieke BE input">
