@@ -1,59 +1,107 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // START NIEUWE ARCHITECTUUR: CONFIG LADEN
-    let PARAMS; // Wordt gevuld vanuit config.json
+    // Globale variabelen bovenaan
+    let PARAMS; 
     let isCouple = false;
     let initialLoad = true;
-    let activeComparison = 'NL'; // Standaard
+    let activeComparison = 'NL'; 
     const MAX_WORK_YEARS = 50;
 
-    // --- Verplaatst: DOM Element Selectors ---
-    // Deze worden nu binnen initializeApp gedefinieerd
+    // DOM Element Selectors - Worden pas gevuld in initializeApp
     let comparisonChoice, compareCountryResult, compareCountryLabel, compareCountryFlag;
     let householdType, partner2Section, inputs, outputs, valueOutputs; 
-    // --- Einde Verplaatst ---
 
-    async function loadConfigAndInit() {
+    const getEl = (id) => document.getElementById(id); // Hulpfunctie
+
+    // --- Kern Initialisatie Functie ---
+    async function initializeApp() {
+        console.log("Attempting to initialize application...");
+        
+        // 1. Laad Configuratie
         try {
             const response = await fetch('./config.json'); 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error(`Kon config.json niet laden. Status: ${response.status}.`);
             }
             PARAMS = await response.json();
-            
-            // Fix Infinity-strings vanuit JSON
-            PARAMS.FR.INKOMSTENBELASTING.SCHIJVEN[4].grens = Infinity;
-            PARAMS.FR.IFI.SCHIJVEN[5].grens = Infinity;
-            PARAMS.BE.INKOMSTENBELASTING.SCHIJVEN_2025[3].grens = Infinity;
+            console.log("Config loaded successfully.");
 
-            console.log("Config loaded. Initializing script...");
-            initializeApp(); // Start de app pas NA het laden van de config
+             // Fix Infinity strings na het laden
+             if (PARAMS?.FR?.INKOMSTENBELASTING?.SCHIJVEN?.[4]) PARAMS.FR.INKOMSTENBELASTING.SCHIJVEN[4].grens = Infinity;
+             if (PARAMS?.FR?.IFI?.SCHIJVEN?.[5]) PARAMS.FR.IFI.SCHIJVEN[5].grens = Infinity;
+             if (PARAMS?.BE?.INKOMSTENBELASTING?.SCHIJVEN_2025?.[3]) PARAMS.BE.INKOMSTENBELASTING.SCHIJVEN_2025[3].grens = Infinity;
+
         } catch (error) {
-            console.error("Kon config.json niet laden of app initialiseren:", error);
-             // Probeer de foutmelding in de breakdown te tonen als dat element wél bestaat
-            const breakdownElement = document.getElementById('calculation-breakdown');
-            if (breakdownElement) {
-                 breakdownElement.textContent = `Fout bij initialiseren: ${error.message}. Kon configuratie niet laden of elementen niet vinden.`;
-            } else {
-                 document.body.innerHTML = "<p>Essentiële configuratie kon niet geladen worden of UI-elementen ontbreken. Applicatie kan niet starten.</p>";
-            }
+            console.error("Fout bij laden configuratie:", error);
+            displayError(`Fout bij laden configuratie: ${error.message}. Applicatie kan niet starten.`);
+            return; // Stop executie als config faalt
+        }
+
+        // 2. Selecteer DOM Elementen (NU PAS, na config laden en binnen DOMContentLoaded)
+        console.log("Selecting DOM elements...");
+        comparisonChoice = { nl: getEl('btn-nl'), be: getEl('btn-be') };
+        compareCountryResult = getEl('compare-country-result');
+        compareCountryLabel = getEl('compare-country-label');
+        compareCountryFlag = getEl('compare-country-flag');
+        householdType = { single: getEl('btn-single'), couple: getEl('btn-couple') };
+        partner2Section = getEl('partner2-section');
+        inputs = {
+            children: getEl('slider-children'), cak: getEl('cak-contribution'), homeHelp: getEl('home-help'),
+            wealthFinancial: getEl('slider-wealth-financial'), wealthProperty: getEl('slider-wealth-property'),
+            p1: { birthYear: getEl('birth-year-1'), birthMonth: getEl('birth-month-1'), aowYears: getEl('aow-years-1'), frWorkYears: getEl('fr-work-years-1'), pensionPublic: getEl('slider-pension-public-1'), pensionPrivate: getEl('slider-pension-private-1'), lijfrente: getEl('slider-lijfrente-1'), lijfrenteDuration: getEl('lijfrente-duration-1'), incomeWealth: getEl('slider-income-wealth-1'), salary: getEl('slider-salary-1'), business: getEl('slider-business-1'), businessType: getEl('business-type-1') },
+            p2: { birthYear: getEl('birth-year-2'), birthMonth: getEl('birth-month-2'), aowYears: getEl('aow-years-2'), frWorkYears: getEl('fr-work-years-2'), pensionPublic: getEl('slider-pension-public-2'), pensionPrivate: getEl('slider-pension-private-2'), lijfrente: getEl('slider-lijfrente-2'), lijfrenteDuration: getEl('lijfrente-duration-2'), incomeWealth: getEl('slider-income-wealth-2'), salary: getEl('slider-salary-2'), business: getEl('slider-business-2'), businessType: getEl('business-type-2') },
+        };
+        outputs = {
+            compareBruto: getEl('compare-bruto'), compareTax: getEl('compare-tax'), compareNetto: getEl('compare-netto'), wealthTaxCompare: getEl('wealth-tax-compare'),
+            frBruto: getEl('fr-bruto'), frTax: getEl('fr-tax'), frNetto: getEl('fr-netto'), wealthTaxFr: getEl('wealth-tax-fr'), wealthTaxFrExpl: getEl('wealth-tax-fr-expl'),
+            conclusionBar: getEl('conclusion-bar'), conclusionValue: getEl('conclusion-value'), conclusionExpl: getEl('conclusion-expl'),
+            estateTotalDisplay: getEl('estate-total-display'), breakdown: getEl('calculation-breakdown'),
+        };
+        valueOutputs = {
+            p1: { aowYears: getEl('value-aow-years-1'), frWorkYears: getEl('value-fr-work-years-1'), pensionPublic: getEl('value-pension-public-1'), pensionPrivate: getEl('value-pension-private-1'), lijfrente: getEl('value-lijfrente-1'), incomeWealth: getEl('value-income-wealth-1'), salary: getEl('value-salary-1'), business: getEl('value-business-1') },
+            p2: { aowYears: getEl('value-aow-years-2'), frWorkYears: getEl('value-fr-work-years-2'), pensionPublic: getEl('value-pension-public-2'), pensionPrivate: getEl('value-pension-private-2'), lijfrente: getEl('value-lijfrente-2'), incomeWealth: getEl('value-income-wealth-2'), salary: getEl('value-salary-2'), business: getEl('value-business-2') },
+            children: getEl('value-children'), wealthFinancial: getEl('value-wealth-financial'), wealthProperty: getEl('value-wealth-property'),
+        };
+
+        // 3. Controleer of Selectors succesvol waren
+        if (!checkSelectors()) {
+             displayError("Initialisatie mislukt: Kon essentiële UI-elementen niet vinden. Controleer de HTML ID's.");
+             return; // Stop als elementen missen
+        }
+        console.log("DOM elements selected successfully.");
+
+        // 4. Voer de rest van de setup uit
+        populateDateDropdowns();
+        setupListeners();
+        updateHouseholdType(false); // Stelt in en roept updateScenario aan
+        updateComparisonCountry('NL'); // Stelt in en roept updateScenario aan
+        console.log("Application initialized successfully.");
+    }
+
+    // --- Hulpfunctie voor Foutmeldingen ---
+    function displayError(message) {
+        console.error(message);
+        const breakdownElement = document.getElementById('calculation-breakdown'); // Probeer opnieuw te vinden
+        if (breakdownElement) {
+            breakdownElement.textContent = message;
+        } else {
+            // Fallback als zelfs breakdown mist
+            document.body.innerHTML = `<p style="color: red; padding: 20px;">${message}</p>`;
         }
     }
-    // EINDE NIEUWE ARCHITECTUUR
 
-    const getEl = (id) => document.getElementById(id); // Hulpfunctie blijft globaal
-
-    const formatCurrency = (amount, withSign = false) => {
+    // --- Alle overige functies (formatCurrency, populateDateDropdowns, getAOWDateInfo, etc.) ---
+    // Deze blijven hieronder, ongewijzigd van de vorige versie (Versie 4), 
+    // maar nu met de zekerheid dat 'inputs', 'outputs', etc. bestaan wanneer ze worden aangeroepen vanuit initializeApp.
+    
+     const formatCurrency = (amount, withSign = false) => {
         const sign = amount > 0 ? '+' : amount < 0 ? '−' : '';
         const roundedAmount = Math.round(Math.abs(amount));
         return `${withSign ? sign + ' ' : ''}€ ${roundedAmount.toLocaleString('nl-NL')}`;
-    };
+     };
 
-    function populateDateDropdowns() {
-        // Controleer of inputs al bestaat (veiligheid)
-        if (!inputs || !inputs.p1 || !inputs.p2) {
-             console.error("Inputs object not available in populateDateDropdowns");
-             return;
-        }
+     function populateDateDropdowns() {
+        // Nu veilig aan te roepen na initializeApp
+        if (!inputs?.p1?.birthYear || !inputs?.p2?.birthYear) return; 
         console.log("Populating date dropdowns...");
         const currentYear = new Date().getFullYear();
         const months = ["Jan", "Feb", "Mrt", "Apr", "Mei", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dec"];
@@ -61,10 +109,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!p || !p.birthYear || !p.birthMonth) return;
             const yearSelect = p.birthYear;
             const monthSelect = p.birthMonth;
-             // Voorkom dubbel vullen bij eventuele re-initialisatie
             if (yearSelect.options.length > 0) return; 
             
-            yearSelect.innerHTML = ''; monthSelect.innerHTML = ''; // Leegmaken blijft
+            yearSelect.innerHTML = ''; monthSelect.innerHTML = '';
             for (let year = currentYear - 18; year >= 1940; year--) {
                 const option = new Option(year, year);
                 if (year === 1960) option.selected = true;
@@ -73,22 +120,19 @@ document.addEventListener('DOMContentLoaded', () => {
             months.forEach((month, index) => monthSelect.add(new Option(month, index + 1)));
         });
         console.log("Date dropdowns populated.");
-    }
+     }
 
-    function getAOWDateInfo(birthYear) {
+     function getAOWDateInfo(birthYear) {
         if (!birthYear || birthYear < 1940) return { years: 67, months: 0 };
         if (birthYear <= 1957) return { years: 66, months: 4 };
         if (birthYear === 1958) return { years: 66, months: 7 };
         if (birthYear === 1959) return { years: 66, months: 10 };
         return { years: 67, months: 0 };
-    }
+     }
 
-    function setupListeners() {
-        // Controleer of elementen bestaan
-        if (!comparisonChoice || !householdType) {
-             console.error("UI choice elements not available in setupListeners");
-             return;
-        }
+     function setupListeners() {
+        // Nu veilig aan te roepen na initializeApp
+        if (!comparisonChoice || !householdType) return;
         console.log("Setting up listeners...");
         
         if (comparisonChoice.nl) comparisonChoice.nl.addEventListener('click', () => updateComparisonCountry('NL'));
@@ -100,6 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const resetButton = getEl('reset-btn');
         if (resetButton) {
              resetButton.addEventListener('click', () => {
+                 if (!inputs?.p1?.birthYear) return; 
                 console.log("Reset button clicked.");
                 document.querySelectorAll('input[type="range"]').forEach(input => { if(input) input.value = 0; });
                 document.querySelectorAll('input[type="checkbox"]').forEach(input => { if(input) input.checked = false; });
@@ -107,15 +152,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (inputs.p1.birthYear) inputs.p1.birthYear.value = 1960;
                 if (inputs.p2.birthYear) inputs.p2.birthYear.value = 1960;
                 initialLoad = true;
-                updateHouseholdType(false); // Resets to single and triggers updateScenario
-                updateComparisonCountry('NL'); // Reset ook naar NL
+                updateHouseholdType(false); 
+                updateComparisonCountry('NL'); 
             });
         }
 
         const copyButton = getEl('copy-btn');
          if (copyButton) {
              copyButton.addEventListener('click', () => {
-                 // Check of outputs.breakdown bestaat
                  const breakdownContent = outputs?.breakdown?.textContent || outputs?.breakdown?.innerText;
                  if (breakdownContent && breakdownContent.trim() !== '' && !breakdownContent.includes("Begin met het invullen")) {
                      navigator.clipboard.writeText(breakdownContent).then(() => {
@@ -139,7 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (e.target.id.includes('aow-years') || e.target.id.includes('fr-work-years')) {
                         adjustWorkYears(e.target.id);
                     }
-                    updateScenario();
+                    updateScenario(); // Roep updateScenario aan bij input
                 }
             });
         } else {
@@ -147,10 +191,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         console.log("Listeners setup complete.");
-    }
+     }
 
-    function updateComparisonCountry(countryCode) {
-         if (!comparisonChoice || !compareCountryLabel || !compareCountryFlag || !compareCountryResult) return; // Guard clause
+     function updateComparisonCountry(countryCode) {
+         if (!comparisonChoice?.nl || !comparisonChoice?.be || !compareCountryLabel || !compareCountryFlag || !compareCountryResult) return; 
         console.log("Updating comparison country to:", countryCode);
         activeComparison = countryCode;
         comparisonChoice.nl.classList.toggle('active', activeComparison === 'NL');
@@ -165,20 +209,21 @@ document.addEventListener('DOMContentLoaded', () => {
             compareCountryFlag.textContent = "🇧🇪";
             compareCountryResult.style.borderColor = "#FDDA25"; 
         }
-        updateScenario();
-    }
+         // Roep updateScenario direct aan NA het wijzigen van de staat
+         if (typeof updateScenario === 'function') updateScenario(); 
+         else console.error("updateScenario function not found");
+     }
 
 
-    function updateHouseholdType(setToCouple) {
-         if (!householdType || !partner2Section || !inputs || !inputs.p2) return; // Guard clause
+     function updateHouseholdType(setToCouple) {
+         if (!householdType?.single || !householdType?.couple || !partner2Section || !inputs?.p2) return; 
         console.log("Updating household type to:", setToCouple ? "Couple" : "Single");
         isCouple = setToCouple;
-        if(householdType.single) householdType.single.classList.toggle('active', !isCouple);
-        if(householdType.couple) householdType.couple.classList.toggle('active', isCouple);
+        householdType.single.classList.toggle('active', !isCouple);
+        householdType.couple.classList.toggle('active', isCouple);
         partner2Section.style.display = isCouple ? 'flex' : 'none';
         
         if (!isCouple) {
-            // Reset partner 2 inputs only if they exist
             Object.keys(inputs.p2).forEach(key => {
                  const el = inputs.p2[key];
                  if(el && (el.type === 'range' || el.type === 'checkbox' || el.tagName === 'SELECT')) {
@@ -188,25 +233,17 @@ document.addEventListener('DOMContentLoaded', () => {
                  }
             });
         }
-        updateScenario();
-    }
-    
-    function getPartnerInput(partnerId) {
-        // Guard clause: Check if inputs structure is ready
-        if (!inputs || !inputs[partnerId]) {
-            console.error(`Inputs for partner ${partnerId} not available in getPartnerInput`);
-            return null; // Return null to indicate failure
-        }
+        // Roep updateScenario direct aan NA het wijzigen van de staat
+        if (typeof updateScenario === 'function') updateScenario();
+        else console.error("updateScenario function not found");
+     }
+     
+     function getPartnerInput(partnerId) {
+        if (!inputs || !inputs[partnerId]) { return null; }
         const p = inputs[partnerId];
-
         const getNum = (el) => el ? Number(el.value) : 0;
         const getStr = (el, defaultVal) => el ? el.value : defaultVal;
-
-        // Extra check for essential elements like birthYear
-        if (!p.birthYear) {
-             console.error(`Birth year element missing for partner ${partnerId}`);
-             return null;
-        }
+        if (!p.birthYear) { return null; } // Essentiële check
 
         return {
             birthYear: getNum(p.birthYear), birthMonth: getNum(p.birthMonth), aowYears: getNum(p.aowYears), frWorkYears: getNum(p.frWorkYears),
@@ -215,10 +252,10 @@ document.addEventListener('DOMContentLoaded', () => {
             incomeWealth: getNum(p.incomeWealth),
             salary: getNum(p.salary), business: getNum(p.business), businessType: getStr(p.businessType, 'services')
         };
-    }
+     }
 
-     function adjustWorkYears(changedSliderId) {
-         if (!inputs || !inputs.p1 || !inputs.p2) return; // Guard
+      function adjustWorkYears(changedSliderId) {
+         if (!inputs?.p1?.aowYears || !inputs?.p2?.aowYears) return; 
          const adjust = (aowSlider, frSlider) => {
              if (!aowSlider || !frSlider) return; 
              let aowVal = Number(aowSlider.value);
@@ -240,39 +277,32 @@ document.addEventListener('DOMContentLoaded', () => {
              adjust(inputs.p2.aowYears, inputs.p2.frWorkYears);
          }
          updateValueOutputsForYears();
-     }
-    
-    function updateValueOutputsForYears() {
-         if (!valueOutputs || !valueOutputs.p1 || !valueOutputs.p2 || !inputs || !inputs.p1 || !inputs.p2) return; // Guard
+      }
+     
+     function updateValueOutputsForYears() {
+         if (!valueOutputs?.p1?.aowYears || !valueOutputs?.p2?.aowYears || !inputs?.p1?.aowYears || !inputs?.p2?.aowYears) return; 
         if (valueOutputs.p1.aowYears && inputs.p1.aowYears) valueOutputs.p1.aowYears.textContent = inputs.p1.aowYears.value;
         if (valueOutputs.p1.frWorkYears && inputs.p1.frWorkYears) valueOutputs.p1.frWorkYears.textContent = inputs.p1.frWorkYears.value;
         if (isCouple && valueOutputs.p2.aowYears && inputs.p2.aowYears) valueOutputs.p2.aowYears.textContent = inputs.p2.aowYears.value;
         if (isCouple && valueOutputs.p2.frWorkYears && inputs.p2.frWorkYears) valueOutputs.p2.frWorkYears.textContent = inputs.p2.frWorkYears.value;
-    }
+     }
 
-
-    function updateScenario() {
-         // Guard clause: Check essential elements needed for the function
+     function updateScenario() {
+         // Belangrijkste Guard Clause: Zijn alle benodigde globale objecten geïnitialiseerd?
         if (!PARAMS || !inputs || !outputs || !valueOutputs) {
-            console.warn("Essential variables (PARAMS, inputs, outputs, valueOutputs) not ready, aborting updateScenario.");
-            // Optionally display a user-friendly message if possible
-            if (outputs?.breakdown) {
-                 outputs.breakdown.textContent = "Applicatie is nog aan het laden...";
-            }
+            console.warn("UpdateScenario called before initialization completed.");
+            if (outputs?.breakdown) outputs.breakdown.textContent = "Applicatie is nog aan het laden...";
             return; 
         }
         console.log("--- updateScenario Start ---");
         try {
             
             const p1Input = getPartnerInput('p1');
-            // Check if getPartnerInput succeeded
-            if (!p1Input) throw new Error("Partner 1 input object kon niet worden gelezen."); 
+            if (!p1Input) throw new Error("Partner 1 input kon niet worden gelezen."); 
             
             const p2Input = isCouple ? getPartnerInput('p2') : null;
-             // If couple, check p2Input as well
-            if (isCouple && !p2Input) throw new Error("Partner 2 input object kon niet worden gelezen (indien van toepassing).");
+            if (isCouple && !p2Input) throw new Error("Partner 2 input kon niet worden gelezen.");
 
-            // Check if inputs.children exists before accessing value
             const childrenValue = inputs.children ? Number(inputs.children.value) : 0;
             const cakChecked = inputs.cak ? inputs.cak.checked : false;
             const homeHelpValue = inputs.homeHelp ? Number(inputs.homeHelp.value) : 0;
@@ -280,42 +310,30 @@ document.addEventListener('DOMContentLoaded', () => {
             const wealthPropertyValue = inputs.wealthProperty ? Number(inputs.wealthProperty.value) : 0;
 
             const inputValues = {
-                isCouple, 
-                children: childrenValue, 
-                cak: cakChecked, 
-                homeHelp: homeHelpValue,
-                wealthFinancial: wealthFinancialValue, 
-                wealthProperty: wealthPropertyValue,
+                isCouple, children: childrenValue, cak: cakChecked, homeHelp: homeHelpValue,
+                wealthFinancial: wealthFinancialValue, wealthProperty: wealthPropertyValue,
                 p1: p1Input, p2: p2Input
             };
             inputValues.estate = inputValues.wealthFinancial + inputValues.wealthProperty;
-            console.log("Input Values Read:", inputValues);
-
-            // Update tooltips (add checks for element existence)
-            [
-                { p: p1Input, el: inputs.p1 },
-                { p: p2Input, el: inputs.p2 }
-            ].forEach(item => {
-                if (item.p && item.el && item.el.aowYears) { // Check if aowYears slider exists
+            
+            // Update tooltips
+             [ { p: p1Input, elData: inputs.p1 }, { p: p2Input, elData: inputs.p2 } ].forEach(item => {
+                if (item.p && item.elData && item.elData.aowYears) { 
                     const maxAOWYears = 50; 
-                    item.el.aowYears.max = maxAOWYears;
-                    const currentAOWValue = Number(item.el.aowYears.value);
+                    item.elData.aowYears.max = maxAOWYears;
+                    const currentAOWValue = Number(item.elData.aowYears.value || 0); 
                     if (currentAOWValue > maxAOWYears) {
-                         item.el.aowYears.value = maxAOWYears;
-                         item.p.aowYears = maxAOWYears; // Update the value in inputValues too
-                    } else {
-                         item.p.aowYears = currentAOWValue; // Update the value in inputValues too
-                    }
-                    // Find tooltip robustly
-                    const labelElement = item.el.aowYears.parentElement?.querySelector('label');
+                         item.elData.aowYears.value = maxAOWYears; item.p.aowYears = maxAOWYears; 
+                    } else { item.p.aowYears = currentAOWValue; }
+                    const labelElement = item.elData.aowYears.closest('.form-group')?.querySelector('label'); 
                     const tooltipSpan = labelElement?.querySelector('.tooltip');
                     if(tooltipSpan) tooltipSpan.dataset.text = `Aantal jaren verzekerd voor AOW (max ${maxAOWYears}). Bepaalt de hoogte van uw Nederlandse AOW. Let op: totaal NL+FR jaren max 50.`;
                 }
-            });
+             });
 
-            // Update display values (add checks)
+            // Update display values 
             Object.keys(valueOutputs.p1 || {}).forEach(key => { 
-                if(valueOutputs.p1[key] && p1Input[key] !== undefined) {
+                if(valueOutputs.p1[key] && p1Input && p1Input[key] !== undefined) { 
                      valueOutputs.p1[key].textContent = ['aowYears', 'frWorkYears'].includes(key) ? p1Input[key] : formatCurrency(p1Input[key]);
                 }
             });
@@ -331,67 +349,56 @@ document.addEventListener('DOMContentLoaded', () => {
             if (valueOutputs.wealthProperty) valueOutputs.wealthProperty.textContent = formatCurrency(inputValues.wealthProperty);
             if (outputs.estateTotalDisplay) outputs.estateTotalDisplay.textContent = formatCurrency(inputValues.estate);
 
-
-            // Calculations (add checks for outputs elements)
-            let compareResults = { bruto: 0, tax: 0, netto: 0, wealthTax: 0 }; // Default empty results
-            if (activeComparison === 'NL') {
-                console.log("Calculating NL...");
-                compareResults = calculateNetherlands(inputValues);
-            } else if (activeComparison === 'BE') {
-                console.log("Calculating BE...");
-                compareResults = calculateBelgium(inputValues);
-            }
-            
-            console.log("Calculating FR...");
+            // Calculations
+            let compareResults = { bruto: 0, tax: 0, netto: 0, wealthTax: 0, breakdown: {} }; 
+            if (activeComparison === 'NL') { compareResults = calculateNetherlands(inputValues); } 
+            else if (activeComparison === 'BE') { compareResults = calculateBelgium(inputValues); }
             const frResults = calculateFrance(inputValues);
-            console.log("Calculations done. Updating UI...");
             
-            // Update UI (add checks for element existence before setting textContent)
+            // Update UI
             if (outputs.compareBruto) outputs.compareBruto.textContent = formatCurrency(compareResults.bruto);
             if (outputs.compareTax) outputs.compareTax.textContent = formatCurrency(compareResults.tax);
             if (outputs.compareNetto) outputs.compareNetto.textContent = formatCurrency(compareResults.netto);
             if (outputs.wealthTaxCompare) outputs.wealthTaxCompare.textContent = formatCurrency(compareResults.wealthTax);
-
             if (outputs.frBruto) outputs.frBruto.textContent = formatCurrency(frResults.bruto);
             if (outputs.frTax) outputs.frTax.textContent = formatCurrency(frResults.tax);
             if (outputs.frNetto) outputs.frNetto.textContent = formatCurrency(frResults.netto);
             if (outputs.wealthTaxFr) outputs.wealthTaxFr.textContent = formatCurrency(frResults.wealthTax);
             if (outputs.wealthTaxFrExpl) outputs.wealthTaxFrExpl.textContent = (frResults.wealthTax === 0 && inputValues.estate > 50000) ? "(Vastgoed < €1.3M)" : "";
             
-            const totalAdvantage = (frResults.netto - compareResults.netto) + (compareResults.wealthTax - frResults.wealthTax);
+             const frNettoNum = typeof frResults.netto === 'number' ? frResults.netto : 0;
+             const compareNettoNum = typeof compareResults.netto === 'number' ? compareResults.netto : 0;
+             const frWealthTaxNum = typeof frResults.wealthTax === 'number' ? frResults.wealthTax : 0;
+             const compareWealthTaxNum = typeof compareResults.wealthTax === 'number' ? compareResults.wealthTax : 0;
+             const totalAdvantage = (frNettoNum - compareNettoNum) + (compareWealthTaxNum - frWealthTaxNum); 
+
             if (outputs.conclusionValue) outputs.conclusionValue.textContent = formatCurrency(totalAdvantage, true);
             if (outputs.conclusionBar) outputs.conclusionBar.className = totalAdvantage >= 0 ? 'positive' : 'negative';
-            if (outputs.conclusionExpl) outputs.conclusionExpl.textContent = totalAdvantage >= 0 ? "Een positief bedrag duidt op een financieel voordeel in het Franse scenario." : "Een negatief bedrag duidt op een financieel voordeel in het vergeleken scenario.";
+            if (outputs.conclusionExpl) outputs.conclusionExpl.textContent = totalAdvantage >= 0 ? "Positief: voordeel in Frankrijk." : "Negatief: voordeel in vergeleken land."; // Kortere tekst
             
-            // Initial load message or breakdown
-             if (outputs.breakdown) { // Check if breakdown element exists
+            // Initial load of breakdown
+             if (outputs.breakdown) { 
                 if (initialLoad) {
-                    outputs.breakdown.innerHTML = `<p style="padding: 15px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">Welkom bij het Kompas! 🧭<br>Begin met het invullen van uw <strong>geboortedatum</strong> en voeg daarna uw inkomstenbronnen toe om de vergelijking te zien.</p>`;
-                    initialLoad = false; // Set initialLoad to false only if successful
+                    outputs.breakdown.innerHTML = `<p style="padding: 15px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">Welkom! 🧭 Vul geboortedatum en inkomen in.</p>`; // Korter
+                    initialLoad = false; 
                 } else {
                     outputs.breakdown.textContent = generateBreakdown(inputValues, compareResults, frResults);
                 }
-             } else {
-                 console.error("Breakdown output element not found!");
-             }
+             } else { console.error("Breakdown element not found!"); }
              console.log("UI Update complete.");
         } catch (error) {
-            console.error("Calculation Error in updateScenario:", error);
-             // Safely display error in breakdown if possible
-             if (outputs?.breakdown) {
-                 outputs.breakdown.textContent = `Er is een fout opgetreden: ${error.message}. Controleer de invoer of probeer opnieuw.`;
-             } else {
-                  console.error("Cannot display error message because breakdown element is missing.");
-             }
+            console.error("Fout in updateScenario:", error);
+             displayError(`Fout tijdens berekening: ${error.message}.`);
         }
          console.log("--- updateScenario End ---");
-    }
+     }
 
-    // --- MODULAIRE BEREKENINGEN ---
-
+    // --- Rekenfuncties (calculateNetherlands, calculateNLNetto, calculateFrance, calculateBelgium) ---
+    // Deze blijven hieronder, identiek aan de vorige versie (Versie 4)
     // --- NEDERLAND ---
     function calculateNetherlands(vals) {
-        if (!PARAMS.NL) { console.error("NL Params missing"); return { bruto: 0, tax: 0, netto: 0, wealthTax: 0 }; }
+        // ... (Volledige code van calculateNetherlands uit Versie 4) ...
+         if (!PARAMS.NL) { console.error("NL Params missing"); return { bruto: 0, tax: 0, netto: 0, wealthTax: 0 }; }
         let currentBruto = 0, currentTax = 0, currentNetto = 0;
         const partners = [vals.p1, vals.p2].filter(p => p);
         
@@ -420,7 +427,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function calculateNLNetto(pensionIncome, salary, business, isAOW) {
-        if (!PARAMS.NL) return { bruto: 0, tax: 0, netto: 0 }; // Param check
+        // ... (Volledige code van calculateNLNetto uit Versie 4) ...
+         if (!PARAMS.NL) return { bruto: 0, tax: 0, netto: 0 }; // Param check
         
         const winstNaVrijstelling = business * (1 - PARAMS.NL.BOX1.MKB_WINSTVRIJSTELLING);
         const zvwBasis = business > 0 ? winstNaVrijstelling : 0;
@@ -467,6 +475,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- FRANKRIJK ---
     function calculateFrance(vals) {
+        // ... (Volledige code van calculateFrance uit Versie 4) ...
          if (!PARAMS.FR || !PARAMS.NL) { console.error("FR/NL Params missing"); return { bruto: 0, tax: 0, netto: 0, wealthTax: 0, breakdown: {} }; }
         let brutoInkomenVoorNLBelasting = 0, totaalAOW = 0, totaalParticulierPensioen = 0, totaalLijfrente = 0, totaalLoon = 0, totaalWinst = 0, isPensionerHousehold = false;
         let totalBusinessForAbattement = { services: 0, rental: 0 };
@@ -623,7 +632,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- BELGIË ---
     function calculateBelgium(vals) {
-        if (!PARAMS.BE || !PARAMS.NL) { console.error("BE/NL Params missing"); return { bruto: 0, tax: 0, netto: 0, wealthTax: 0, breakdown: {} }; }
+        // ... (Volledige code van calculateBelgium uit Versie 4) ...
+         if (!PARAMS.BE || !PARAMS.NL) { console.error("BE/NL Params missing"); return { bruto: 0, tax: 0, netto: 0, wealthTax: 0, breakdown: {} }; }
         console.log("Calculating Belgium...");
         
         let totaalBruto = 0;
@@ -778,6 +788,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- BREAKDOWN ---
     function generateBreakdown(vals, compare, fr) {
+        // ... (Volledige code van generateBreakdown uit Versie 4) ...
          // Guard clauses for safety
          if (!vals || !compare || !fr || !compare.breakdown || !fr.breakdown) {
              console.error("Missing data for generating breakdown");
@@ -855,6 +866,7 @@ Vermogen:
             `;
         }
 
+        // Corrected formatCSS call to formatCurrency
         return `
 Analyse Scenario: ${activeComparison}-FR Financieel Kompas
 ------------------------------------------
@@ -863,7 +875,7 @@ Basisgegevens
 -------------
 Huishouden: ${vals.isCouple ? 'Echtpaar / Partners' : 'Alleenstaande'}
 Minderjarige kinderen: ${vals.children || 0}
-Totaal Vermogen: ${formatCurrency(estate)} (${formatCurrency(wealthFinancial)} fin. / ${formatCurrency(wealthProperty)} vastgoed)
+Totaal Vermogen: ${formatCurrency(estate)} (${formatCurrency(wealthFinancial)} fin. / ${formatCurrency(wealthProperty)} vastgoed) 
 ${projectionP1}${projectionP2}
 
 ${compareCountryTitle}
@@ -891,56 +903,8 @@ Vermogen (IFI):
         `;
     }
 
-    // --- Initialisatie ---
-    function initializeApp() {
-        // --- DEFINEER SELECTORS HIER ---
-        comparisonChoice = {
-            nl: getEl('btn-nl'),
-            be: getEl('btn-be')
-        };
-        compareCountryResult = getEl('compare-country-result');
-        compareCountryLabel = getEl('compare-country-label');
-        compareCountryFlag = getEl('compare-country-flag');
+    // --- Start de Applicatie ---
+    // De initializeApp functie wordt aangeroepen zodra de DOM volledig geladen is.
+    initializeApp(); 
 
-        householdType = { single: getEl('btn-single'), couple: getEl('btn-couple') };
-        partner2Section = getEl('partner2-section');
-        inputs = {
-            children: getEl('slider-children'), cak: getEl('cak-contribution'),
-            homeHelp: getEl('home-help'),
-            wealthFinancial: getEl('slider-wealth-financial'), wealthProperty: getEl('slider-wealth-property'),
-            p1: { birthYear: getEl('birth-year-1'), birthMonth: getEl('birth-month-1'), aowYears: getEl('aow-years-1'), frWorkYears: getEl('fr-work-years-1'), pensionPublic: getEl('slider-pension-public-1'), pensionPrivate: getEl('slider-pension-private-1'), lijfrente: getEl('slider-lijfrente-1'), lijfrenteDuration: getEl('lijfrente-duration-1'), incomeWealth: getEl('slider-income-wealth-1'), salary: getEl('slider-salary-1'), business: getEl('slider-business-1'), businessType: getEl('business-type-1') },
-            p2: { birthYear: getEl('birth-year-2'), birthMonth: getEl('birth-month-2'), aowYears: getEl('aow-years-2'), frWorkYears: getEl('fr-work-years-2'), pensionPublic: getEl('slider-pension-public-2'), pensionPrivate: getEl('slider-pension-private-2'), lijfrente: getEl('slider-lijfrente-2'), lijfrenteDuration: getEl('lijfrente-duration-2'), incomeWealth: getEl('slider-income-wealth-2'), salary: getEl('slider-salary-2'), business: getEl('slider-business-2'), businessType: getEl('business-type-2') },
-        };
-        outputs = {
-            compareBruto: getEl('compare-bruto'), compareTax: getEl('compare-tax'), compareNetto: getEl('compare-netto'),
-            wealthTaxCompare: getEl('wealth-tax-compare'),
-            frBruto: getEl('fr-bruto'), frTax: getEl('fr-tax'), frNetto: getEl('fr-netto'),
-            wealthTaxFr: getEl('wealth-tax-fr'),
-            wealthTaxFrExpl: getEl('wealth-tax-fr-expl'),
-            conclusionBar: getEl('conclusion-bar'), conclusionValue: getEl('conclusion-value'), conclusionExpl: getEl('conclusion-expl'),
-            estateTotalDisplay: getEl('estate-total-display'),
-            breakdown: getEl('calculation-breakdown'),
-        };
-        valueOutputs = {
-            p1: { aowYears: getEl('value-aow-years-1'), frWorkYears: getEl('value-fr-work-years-1'), pensionPublic: getEl('value-pension-public-1'), pensionPrivate: getEl('value-pension-private-1'), lijfrente: getEl('value-lijfrente-1'), incomeWealth: getEl('value-income-wealth-1'), salary: getEl('value-salary-1'), business: getEl('value-business-1') },
-            p2: { aowYears: getEl('value-aow-years-2'), frWorkYears: getEl('value-fr-work-years-2'), pensionPublic: getEl('value-pension-public-2'), pensionPrivate: getEl('value-pension-private-2'), lijfrente: getEl('value-lijfrente-2'), incomeWealth: getEl('value-income-wealth-2'), salary: getEl('value-salary-2'), business: getEl('value-business-2') },
-            children: getEl('value-children'), wealthFinancial: getEl('value-wealth-financial'), wealthProperty: getEl('value-wealth-property'),
-        };
-        // --- EINDE SELECTOR DEFINITIES ---
-
-         // Check if a critical element is missing after trying to select them
-         if (!inputs || !inputs.children || !outputs || !outputs.breakdown) {
-            throw new Error("Initialisatie mislukt: Kon essentiële UI-elementen niet vinden.");
-         }
-
-        populateDateDropdowns();
-        setupListeners();
-        updateHouseholdType(false); // Start as single
-        updateComparisonCountry('NL'); // Start met NL
-        // updateScenario() wordt aangeroepen vanuit de vorige twee functies
-    }
-
-    // Start de applicatie
-    loadConfigAndInit();
-
-});
+}); // Einde DOMContentLoaded listener
