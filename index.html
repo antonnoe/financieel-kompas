@@ -23,19 +23,16 @@
         </div>
 
         <section id="results-bar" class="sticky">
-            {/* Vergelijkingsland (NL/BE) */}
             <div class="country-result" id="compare-country-result">
                 <h2><span id="compare-country-label">Nederland</span> <span id="compare-country-flag">🇳🇱</span></h2>
                 <div class="result-metric-detailed"><span class="detail-line">Bruto Inkomen: <span id="compare-bruto">€ 0</span></span><span class="detail-line">- Lasten: <span id="compare-tax">€ 0</span></span><span class="detail-line final-net"><strong>= Netto Inkomen: <span id="compare-netto">€ 0</span></strong></span></div>
                 <div class="result-metric"><label>Jaarl. Aanslag Vermogen</label><span class="result-value" id="wealth-tax-compare">€ 0</span></div>
             </div>
-            {/* Frankrijk */}
             <div class="country-result" id="result-fr">
                 <h2>Frankrijk 🇫🇷</h2>
                  <div class="result-metric-detailed"><span class="detail-line">Bruto Inkomen: <span id="fr-bruto">€ 0</span></span><span class="detail-line">- Lasten: <span id="fr-tax">€ 0</span></span><span class="detail-line final-net"><strong>= Netto Inkomen: <span id="fr-netto">€ 0</span></strong></span></div>
                 <div class="result-metric"><label>Jaarl. Aanslag Vermogen</label><span class="result-value" id="wealth-tax-fr">€ 0</span><span class="explanation-text" id="wealth-tax-fr-expl"></span></div>
             </div>
-             {/* Conclusie */}
              <div class="conclusion-integrated" id="conclusion-bar">
                  <h3>Financiële Balans (Jaarlijks Netto Verschil FR vs. Vergeleken Land)</h3>
                  <p id="conclusion-value" class="positive">+ € 0</p><em id="conclusion-expl">Positief: voordeel FR. Negatief: voordeel vergeleken land.</em>
@@ -43,46 +40,36 @@
         </section>
 
         <section id="input-panel">
-            {/* Landkeuze */}
             <div class="module household-choice"><label>Vergelijk Frankrijk met:</label><div class="choice-buttons"><button id="btn-nl" class="active">Nederland 🇳🇱</button><button id="btn-be">België 🇧🇪</button></div></div>
-            {/* Huishoudkeuze */}
             <div class="module household-choice"><label>Voor wie?</label><div class="choice-buttons"><button id="btn-single" class="active">Alleenstaande</button><button id="btn-couple">Partners</button></div></div>
 
             <details class="module" open>
                 <summary>Module 1: Inkomen & Situatie</summary>
                 <div class="form-grid" id="income-grid">
-                    {/* Partner 1 */}
                     <div class="partner-section" id="partner1-section">
                         <h3 class="partner-title">Partner 1 (of Alleenstaande)</h3>
                         <div class="form-group date-group"><label>Geboortedatum <span class="tooltip" data-text="Bepaalt pensioenleeftijd/voordelen.">(?)</span></label><div> <select id="birth-year-1"></select> <select id="birth-month-1"></select> </div></div>
-                        {/* Land-specifieke werkjaren */}
                         <div class="form-group nl-specific"><label>Jaren AOW-opbouw (NL) <span class="tooltip" data-text="Max 50. Bepaalt hoogte NL AOW. Totaal EU-jaren (NL+FR) max 50 relevant voor FR.">(?)</span>: <span class="slider-value" id="value-aow-years-1">0</span></label><input type="range" class="slider" id="aow-years-1" min="0" max="50" step="1" value="0"></div>
                         <div class="form-group be-specific"><label>Werkjaren in België <span class="tooltip" data-text="Max 50. Totaal EU-jaren (BE+FR) max 50 relevant voor FR staatspensioen.">(?)</span>: <span class="slider-value" id="value-be-work-years-1">0</span></label><input type="range" class="slider" id="be-work-years-1" min="0" max="50" step="1" value="0"></div>
                         <div class="form-group fr-specific hide-for-be"><label>Werkjaren in Frankrijk <span class="tooltip" data-text="Max 50. Bepaalt hoogte FR staatspensioen. Totaal EU-jaren (NL/BE + FR) max 50.">(?)</span>: <span class="slider-value" id="value-fr-work-years-1">0</span></label><input type="range" class="slider" id="fr-work-years-1" min="0" max="50" step="1" value="0"></div>
-                        {/* Pensioenen */}
                         <div class="form-group be-specific"><label>Bruto BE Wettelijk Pensioen <span class="tooltip" data-text="Jaarlijks bruto BE staatspensioen (1e pijler). Onderhevig aan RIZIV/Solid. bijdragen. Meestal belast in woonland.">(?)</span>: <span class="slider-value" id="value-be-pension-1">€ 0</span></label><input type="range" class="slider" id="slider-be-pension-1" min="0" max="80000" step="1000" value="0"></div>
                         <div class="form-group" id="group-pension-public-1"><label>Bruto Overheidspensioen (<span class="country-origin">uit NL</span>) <span class="tooltip" data-text="Pensioen van overheidsdienst (bv. NL ABP, BE Ambtenaren). Heffingsland meestal werkland (bronland). Zie verdrag.">(?)</span>: <span class="slider-value" id="value-pension-public-1">€ 0</span></label><input type="range" class="slider" id="slider-pension-public-1" min="0" max="150000" step="2500" value="0"></div>
                         <div class="form-group" id="group-pension-private-1"><label>Bruto Particulier Pensioen (<span class="country-origin">uit NL</span>) <span class="tooltip" data-text="Pensioen private sector (bv. NL bedrijfspensioen). Heffingsland vaak woonland (Frankrijk). Zie verdrag & BE <€25k regel.">(?)</span>: <span class="slider-value" id="value-pension-private-1">€ 0</span></label><input type="range" class="slider" id="slider-pension-private-1" min="0" max="150000" step="2500" value="0"></div>
                         <div class="form-group nl-specific" id="group-lijfrente-1"><label>Bruto Lijfrente-uitkering (uit NL) <span class="tooltip" data-text="Uitkering NL lijfrentepolis. Heffingsland vaak woonland (Frankrijk). Zie verdrag & BE <€25k regel.">(?)</span>: <span class="slider-value" id="value-lijfrente-1">€ 0</span></label><input type="range" class="slider" id="slider-lijfrente-1" min="0" max="150000" step="2500" value="0"><select id="lijfrente-duration-1" class="duration-select"><option value="999">Levenslang</option><option value="85">Tot 85j</option><option value="80">Tot 80j</option><option value="75">Tot 75j</option></select></div>
-                        {/* Overig Inkomen */}
                         <div class="form-group" id="group-income-wealth-1"><label>Jaarlijks inkomen uit vermogen <span class="tooltip" data-text="Werkelijk rendement (dividend/rente). NL: Box 3 (bezit). FR/BE: belast op inkomen (met vrijstellingen).">(?)</span>: <span class="slider-value" id="value-income-wealth-1">€ 0</span></label><input type="range" class="slider" id="slider-income-wealth-1" min="0" max="100000" step="1000" value="0"></div>
                         <div class="form-group" id="group-salary-1"><label>Inkomen Loondienst <span class="tooltip" data-text="Bruto jaarinkomen incl. extra's.">(?)</span>: <span class="slider-value" id="value-salary-1">€ 0</span></label><input type="range" class="slider" id="slider-salary-1" min="0" max="250000" step="5000" value="0"></div>
                         <div class="form-group" id="group-business-1"><label>Winst uit Onderneming <span class="tooltip" data-text="Bruto winst vóór belastingen/sociale bijdragen.">(?)</span></label><select id="business-type-1" class="duration-select fr-specific hide-for-be"><option value="services">Dienst/Overig</option><option value="rental">Verhuur Gîte/B&B</option></select><input type="range" class="slider" id="slider-business-1" min="0" max="300000" step="5000" value="0"><span class="slider-value" id="value-business-1">€ 0</span></div>
                     </div>
-                     {/* Partner 2 */}
-                    <div class="partner-section" id="partner2-section" style="display: none;">
+                     <div class="partner-section" id="partner2-section" style="display: none;">
                         <h3 class="partner-title">Partner 2</h3>
                         <div class="form-group date-group"><label>Geboortedatum <span class="tooltip" data-text="Partner's geboortedatum.">(?)</span></label><div><select id="birth-year-2"></select><select id="birth-month-2"></select></div></div>
-                        {/* Land-specifieke werkjaren */}
                         <div class="form-group nl-specific"><label>Jaren AOW-opbouw (NL) <span class="tooltip" data-text="Max 50. Totaal EU-jaren (NL+FR) max 50.">(?)</span>: <span class="slider-value" id="value-aow-years-2">0</span></label><input type="range" class="slider" id="aow-years-2" min="0" max="50" step="1" value="0"></div>
                         <div class="form-group be-specific"><label>Werkjaren in België <span class="tooltip" data-text="Max 50. Totaal EU-jaren (BE+FR) max 50.">(?)</span>: <span class="slider-value" id="value-be-work-years-2">0</span></label><input type="range" class="slider" id="be-work-years-2" min="0" max="50" step="1" value="0"></div>
                         <div class="form-group fr-specific hide-for-be"><label>Werkjaren in Frankrijk <span class="tooltip" data-text="Max 50. Totaal EU-jaren (NL/BE + FR) max 50.">(?)</span>: <span class="slider-value" id="value-fr-work-years-2">0</span></label><input type="range" class="slider" id="fr-work-years-2" min="0" max="50" step="1" value="0"></div>
-                        {/* Pensioenen */}
                         <div class="form-group be-specific"><label>Bruto BE Wettelijk Pensioen <span class="tooltip" data-text="Jaarlijks bruto BE staatspensioen partner.">(?)</span>: <span class="slider-value" id="value-be-pension-2">€ 0</span></label><input type="range" class="slider" id="slider-be-pension-2" min="0" max="80000" step="1000" value="0"></div>
                         <div class="form-group" id="group-pension-public-2"><label>Bruto Overheidspensioen (<span class="country-origin">uit NL</span>) <span class="tooltip" data-text="Heffingsland meestal werkland.">(?)</span>: <span class="slider-value" id="value-pension-public-2">€ 0</span></label><input type="range" class="slider" id="slider-pension-public-2" min="0" max="150000" step="2500" value="0"></div>
                         <div class="form-group" id="group-pension-private-2"><label>Bruto Particulier Pensioen (<span class="country-origin">uit NL</span>) <span class="tooltip" data-text="Heffingsland vaak woonland.">(?)</span>: <span class="slider-value" id="value-pension-private-2">€ 0</span></label><input type="range" class="slider" id="slider-pension-private-2" min="0" max="150000" step="2500" value="0"></div>
                         <div class="form-group nl-specific" id="group-lijfrente-2"><label>Bruto Lijfrente-uitkering (uit NL) <span class="tooltip" data-text="Heffingsland vaak woonland.">(?)</span>: <span class="slider-value" id="value-lijfrente-2">€ 0</span></label><input type="range" class="slider" id="slider-lijfrente-2" min="0" max="150000" step="2500" value="0"><select id="lijfrente-duration-2" class="duration-select"><option value="999">Levenslang</option><option value="85">Tot 85j</option><option value="80">Tot 80j</option><option value="75">Tot 75j</option></select></div>
-                        {/* Overig Inkomen */}
                         <div class="form-group" id="group-income-wealth-2"><label>Jaarlijks inkomen uit vermogen <span class="tooltip" data-text="Werkelijk rendement. Relevant in FR/BE.">(?)</span>: <span class="slider-value" id="value-income-wealth-2">€ 0</span></label><input type="range" class="slider" id="slider-income-wealth-2" min="0" max="100000" step="1000" value="0"></div>
                         <div class="form-group" id="group-salary-2"><label>Inkomen Loondienst <span class="tooltip" data-text="Bruto jaarinkomen.">(?)</span>: <span class="slider-value" id="value-salary-2">€ 0</span></label><input type="range" class="slider" id="slider-salary-2" min="0" max="250000" step="5000" value="0"></div>
                         <div class="form-group" id="group-business-2"><label>Winst uit Onderneming <span class="tooltip" data-text="Bruto winst.">(?)</span></label><select id="business-type-2" class="duration-select fr-specific hide-for-be"><option value="services">Dienst/Overig</option><option value="rental">Verhuur Gîte/B&B</option></select><input type="range" class="slider" id="slider-business-2" min="0" max="300000" step="5000" value="0"><span class="slider-value" id="value-business-2">€ 0</span></div>
@@ -98,7 +85,7 @@
                      <div class="form-group full-width fr-specific hide-for-be"><label>Jaarl. kosten hulp aan huis (FR)? <span class="tooltip" data-text="In Frankrijk 50% belastingkrediet.">(?)</span></label><select id="home-help"><option value="0">Nee</option><option value="1500">Beperkt (€1.5k)</option><option value="3500">Regelmatig (€3.5k)</option><option value="7000">Substantieel (€7k)</option></select></div>
                      <div class="form-group"><label>Financieel Vermogen <span class="tooltip" data-text="Spaargeld, beleggingen etc. Basis NL Box 3. Inkomen belast in FR/BE.">(?)</span>: <span class="slider-value" id="value-wealth-financial">€ 0</span></label><input type="range" class="slider" id="slider-wealth-financial" min="0" max="5000000" step="50000" value="0"></div>
                      <div class="form-group"><label>Vastgoed Vermogen (excl. hoofd) <span class="tooltip" data-text="Basis FR IFI (> 1.3M€).">(?)</span>: <span class="slider-value" id="value-wealth-property">€ 0</span></label><input type="range" class="slider" id="slider-wealth-property" min="0" max="5000000" step="50000" value="0"></div>
-                </div>
+                     </div>
             </details>
         </section>
 
