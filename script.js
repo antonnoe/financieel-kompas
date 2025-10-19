@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
             p2: { birthYear: getEl('birth-year-2'), birthMonth: getEl('birth-month-2'), aowYears: getEl('aow-years-2'), beWorkYears: getEl('be-work-years-2'), frWorkYears: getEl('fr-work-years-2'), bePension: getEl('slider-be-pension-2'), pensionPublic: getEl('slider-pension-public-2'), pensionPrivate: getEl('slider-pension-private-2'), lijfrente: getEl('slider-lijfrente-2'), lijfrenteDuration: getEl('lijfrente-duration-2'), incomeWealth: getEl('slider-income-wealth-2'), salary: getEl('slider-salary-2'), business: getEl('slider-business-2'), businessType: getEl('business-type-2') },};
         outputs = { compareBruto: getEl('compare-bruto'), compareTax: getEl('compare-tax'), compareNetto: getEl('compare-netto'), wealthTaxCompare: getEl('wealth-tax-compare'), frBruto: getEl('fr-bruto'), frTax: getEl('fr-tax'), frNetto: getEl('fr-netto'), wealthTaxFr: getEl('wealth-tax-fr'), wealthTaxFrExpl: getEl('wealth-tax-fr-expl'), conclusionBar: getEl('conclusion-bar'), conclusionValue: getEl('conclusion-value'), conclusionExpl: getEl('conclusion-expl'), estateTotalDisplay: getEl('estate-total-display'), breakdown: getEl('calculation-breakdown'),};
         valueOutputs = { p1: { aowYears: getEl('value-aow-years-1'), beWorkYears: getEl('value-be-work-years-1'), frWorkYears: getEl('value-fr-work-years-1'), bePension: getEl('value-be-pension-1'), pensionPublic: getEl('value-pension-public-1'), pensionPrivate: getEl('value-pension-private-1'), lijfrente: getEl('value-lijfrente-1'), incomeWealth: getEl('value-income-wealth-1'), salary: getEl('value-salary-1'), business: getEl('value-business-1') }, p2: { aowYears: getEl('value-aow-years-2'), beWorkYears: getEl('value-be-work-years-2'), frWorkYears: getEl('value-fr-work-years-2'), bePension: getEl('value-be-pension-2'), pensionPublic: getEl('value-pension-public-2'), pensionPrivate: getEl('value-pension-private-2'), lijfrente: getEl('value-lijfrente-2'), incomeWealth: getEl('value-income-wealth-2'), salary: getEl('value-salary-2'), business: getEl('value-business-2') }, children: getEl('value-children'), wealthFinancial: getEl('value-wealth-financial'), wealthProperty: getEl('value-wealth-property'),};
-        pensionLabels = document.querySelectorAll('.country-origin'); // Select spans for dynamic text
+        pensionLabels = document.querySelectorAll('.country-origin');
 
         // 3. Check Selectors
         if (!checkSelectors()) { displayError("Init mislukt: Kon UI-elementen niet vinden."); return; }
@@ -48,11 +48,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function getAOWDateInfo(birthYear) { const yr=Number(birthYear); if(!yr||yr<1940)return{years:67,months:0}; if(yr<=1957)return{years:66,months:4}; if(yr===1958)return{years:66,months:7}; if(yr===1959)return{years:66,months:10}; return{years:67,months:0}; }
     function setupListeners() { if(!comparisonChoice||!householdType)return; if(comparisonChoice.nl)comparisonChoice.nl.addEventListener('click',()=>updateComparisonCountry('NL')); if(comparisonChoice.be)comparisonChoice.be.addEventListener('click',()=>updateComparisonCountry('BE')); if(householdType.single)householdType.single.addEventListener('click',()=>updateHouseholdType(false)); if(householdType.couple)householdType.couple.addEventListener('click',()=>updateHouseholdType(true)); const rb=getEl('reset-btn'); if(rb){rb.addEventListener('click',()=>{if(!inputs?.p1?.birthYear)return; document.querySelectorAll('input[type=range]').forEach(i=>{if(i)i.value=0;}); document.querySelectorAll('input[type=checkbox]').forEach(i=>{if(i)i.checked=false;}); document.querySelectorAll('select:not([id*="birth"])').forEach(s=>{if(s)s.selectedIndex=0;}); if(inputs.p1.birthYear)inputs.p1.birthYear.value=1960; if(inputs.p2.birthYear)inputs.p2.birthYear.value=1960; initialLoad=true; updateHouseholdType(false);updateComparisonCountry('NL');});} const cb=getEl('copy-btn'); if(cb){cb.addEventListener('click',()=>{const txt=outputs?.breakdown?.textContent||''; if(txt&&!txt.includes("Welkom")){navigator.clipboard.writeText(txt).then(()=>{cb.textContent='Gekopieerd!';setTimeout(()=>{cb.textContent='📋 Kopieer Analyse';},2000);}).catch(err=>{console.error('Kopieerfout:',err);alert('Kopiëren mislukt.');});}else{alert("Genereer analyse.");}}); } const ic=getEl('input-panel'); if(ic){ic.addEventListener('input',(e)=>{if(e.target.matches('input, select')){if(e.target.id.includes('aow-years')||e.target.id.includes('fr-work-years')||e.target.id.includes('be-work-years')){adjustWorkYears(e.target.id);}updateScenario();}});}else{console.error("#input-panel missing!");} }
     function toggleCountrySpecificFields(countryCode) {
-        document.querySelectorAll('.nl-specific').forEach(el=>el.style.display=(countryCode==='NL'?'':'none'));
-        document.querySelectorAll('.be-specific').forEach(el=>el.style.display=(countryCode==='BE'?'':'none'));
-        document.querySelectorAll('.hide-for-be').forEach(el=>el.style.display=(countryCode==='BE'?'none':''));
-        const countryName = countryCode === 'NL' ? 'NL' : 'BE'; // Dynamic label update
-        pensionLabels.forEach(label => label.textContent = `uit ${countryName}`);
+        document.querySelectorAll('.nl-specific').forEach(el=>el.style.display=(countryCode==='NL'?'block':'none')); // Use block for default visibility
+        document.querySelectorAll('.be-specific').forEach(el=>el.style.display=(countryCode==='BE'?'block':'none')); // Use block for default visibility
+        document.querySelectorAll('.hide-for-be').forEach(el=>el.style.display=(countryCode==='BE'?'none':'block')); // Use block for default visibility
+        const countryName = countryCode === 'NL' ? 'NL' : 'BE';
+        pensionLabels.forEach(label => { if(label) label.textContent = `uit ${countryName}`; }); // Update pension labels
     }
     function updateComparisonCountry(countryCode) {
          if (!comparisonChoice?.nl || !comparisonChoice?.be || !compareCountryLabel || !compareCountryFlag || !compareCountryResult) return;
@@ -90,14 +90,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     function updateValueOutputsForYears() { // Updated logic
         if (!valueOutputs?.p1 || !valueOutputs?.p2 || !inputs?.p1 || !inputs?.p2) return;
-        const updateValue = (outputEl, inputEl, isCurrency = true) => { if (outputEl && inputEl) { outputEl.textContent = isCurrency ? formatCurrency(Number(inputEl.value||0)) : inputEl.value; }};
+        const updateValue = (outputEl, inputEl, isCurrency = true, isYears = false) => {
+            if (outputEl && inputEl) {
+                 const value = inputEl.value || '0'; // Default to '0' if null/undefined
+                 outputEl.textContent = isYears ? value : (isCurrency ? formatCurrency(Number(value)) : value);
+            }
+        };
         // Partner 1
-        updateValue(valueOutputs.p1.aowYears, inputs.p1.aowYears, false); updateValue(valueOutputs.p1.beWorkYears, inputs.p1.beWorkYears, false); updateValue(valueOutputs.p1.frWorkYears, inputs.p1.frWorkYears, false);
+        updateValue(valueOutputs.p1.aowYears, inputs.p1.aowYears, false, true); updateValue(valueOutputs.p1.beWorkYears, inputs.p1.beWorkYears, false, true); updateValue(valueOutputs.p1.frWorkYears, inputs.p1.frWorkYears, false, true);
         updateValue(valueOutputs.p1.bePension, inputs.p1.bePension); updateValue(valueOutputs.p1.pensionPublic, inputs.p1.pensionPublic); updateValue(valueOutputs.p1.pensionPrivate, inputs.p1.pensionPrivate);
         updateValue(valueOutputs.p1.lijfrente, inputs.p1.lijfrente); updateValue(valueOutputs.p1.incomeWealth, inputs.p1.incomeWealth); updateValue(valueOutputs.p1.salary, inputs.p1.salary); updateValue(valueOutputs.p1.business, inputs.p1.business);
         // Partner 2
         if(isCouple){
-            updateValue(valueOutputs.p2.aowYears, inputs.p2.aowYears, false); updateValue(valueOutputs.p2.beWorkYears, inputs.p2.beWorkYears, false); updateValue(valueOutputs.p2.frWorkYears, inputs.p2.frWorkYears, false);
+            updateValue(valueOutputs.p2.aowYears, inputs.p2.aowYears, false, true); updateValue(valueOutputs.p2.beWorkYears, inputs.p2.beWorkYears, false, true); updateValue(valueOutputs.p2.frWorkYears, inputs.p2.frWorkYears, false, true);
             updateValue(valueOutputs.p2.bePension, inputs.p2.bePension); updateValue(valueOutputs.p2.pensionPublic, inputs.p2.pensionPublic); updateValue(valueOutputs.p2.pensionPrivate, inputs.p2.pensionPrivate);
             updateValue(valueOutputs.p2.lijfrente, inputs.p2.lijfrente); updateValue(valueOutputs.p2.incomeWealth, inputs.p2.incomeWealth); updateValue(valueOutputs.p2.salary, inputs.p2.salary); updateValue(valueOutputs.p2.business, inputs.p2.business);
         }
@@ -110,7 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const inputValues = { isCouple, children: Number(inputs.children?.value||0), cak: !!inputs.cak?.checked, homeHelp: Number(inputs.homeHelp?.value||0), wealthFinancial: Number(inputs.wealthFinancial?.value||0), wealthProperty: Number(inputs.wealthProperty?.value||0), p1: p1Input, p2: p2Input };
             inputValues.estate = inputValues.wealthFinancial + inputValues.wealthProperty;
 
-            // Update tooltips
+            // Update tooltips dynamically based on country
             [ { p: p1Input, elData: inputs.p1 }, { p: p2Input, elData: inputs.p2 } ].forEach(item => {
                 const yearsSlider = activeComparison === 'NL' ? item.elData?.aowYears : item.elData?.beWorkYears;
                 if (item.p && yearsSlider) {
@@ -118,14 +123,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     item.p[yearProp] = Math.min(cur, max); if(cur>max) yearsSlider.value=max;
                     const tt=yearsSlider.closest('.form-group')?.querySelector('.tooltip'); if(tt) tt.dataset.text = `Jaren ${activeComparison} (max ${max}). EU-jaren (${activeComparison}+FR) max 50.`;
                 }
-                // Update FR years tooltip too
                 if (item.p && item.elData?.frWorkYears) {
                     const max=50; item.elData.frWorkYears.max=max; const cur=Number(item.elData.frWorkYears.value||0); item.p.frWorkYears = Math.min(cur, max); if(cur>max) item.elData.frWorkYears.value=max;
                      const tt=item.elData.frWorkYears.closest('.form-group')?.querySelector('.tooltip'); if(tt) tt.dataset.text = `Jaren FR (max ${max}). EU-jaren (${activeComparison}+FR) max 50.`;
                 }
             });
-             // Update all value displays
-            updateValueOutputsForYears(); // Call this first
+            // Update value displays
+            updateValueOutputsForYears(); // Call this first!
             if(valueOutputs.children) valueOutputs.children.textContent=inputValues.children; if(valueOutputs.wealthFinancial) valueOutputs.wealthFinancial.textContent=formatCurrency(inputValues.wealthFinancial); if(valueOutputs.wealthProperty) valueOutputs.wealthProperty.textContent=formatCurrency(inputValues.wealthProperty); if(outputs.estateTotalDisplay) outputs.estateTotalDisplay.textContent=formatCurrency(inputValues.estate);
 
 
@@ -150,8 +154,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===========================================
 
     // --- NEDERLAND ---
-    function calculateNetherlands(vals) { /* ... (identiek) ... */ if(!PARAMS.NL)return{bruto:0,tax:0,netto:0,wealthTax:0,breakdown:{}}; let cB=0,cT=0,cN=0; const P=[vals.p1,vals.p2].filter(p=>p); P.forEach(p=>{const aDI=getAOWDateInfo(p.birthYear);const aM=new Date((p.birthYear||1900)+aDI.years,(p.birthMonth||1)-1+aDI.months);const iP=new Date()>aM;const cA=new Date().getFullYear()-(p.birthYear||1900);const lDN=p.lijfrenteDuration?Number(p.lijfrenteDuration):999;const lIA=cA<lDN; const cP=iP?(p.pensionPublic||0)+(p.pensionPrivate||0)+(lIA?(p.lijfrente||0):0):0; const cAOW=iP?(Number(p.aowYears||0)/50)*(vals.isCouple?PARAMS.AOW_BRUTO_COUPLE:PARAMS.AOW_BRUTO_SINGLE):0; const r=calculateNLNetto(cAOW+cP,p.salary||0,p.business||0,iP); cB+=r.bruto;cT+=r.tax;cN+=r.netto;}); const v=vals.isCouple?PARAMS.NL.BOX3.VRIJSTELLING_COUPLE:PARAMS.NL.BOX3.VRIJSTELLING_SINGLE; const wT=Math.max(0,(vals.wealthFinancial||0)-v)*(PARAMS.NL.BOX3.FORFAITAIR_RENDEMENT||0)*(PARAMS.NL.BOX3.TARIEF||0); return {bruto:cB,tax:cT,netto:cN,wealthTax:wT,breakdown:{}}; }
-    function calculateNLNetto(pI,s,b,iA) { /* ... (identiek) ... */ if(!PARAMS.NL)return{bruto:0,tax:0,netto:0}; const wNV=b*(1-(PARAMS.NL.BOX1.MKB_WINSTVRIJSTELLING||0)); const zB=b>0?wNV:0; const z=zB*(PARAMS.NL.SOCIALE_LASTEN.ZVW_PERCENTAGE||0); const br=pI+s+wNV; if(br<=0&&z<=0)return{bruto:0,tax:0,netto:0}; if(br<=0&&z>0)return{bruto:0,tax:z,netto:-z}; let t=0; const T=iA?PARAMS.NL.BOX1.TARIEVEN_BOVEN_AOW:PARAMS.NL.BOX1.TARIEVEN_ONDER_AOW; const gS1=PARAMS.NL.BOX1.GRENS_SCHIJF_1||Infinity; if(br<=gS1){t=br*T[0];}else{t=(gS1*T[0])+((br-gS1)*T[1]);} let aK=(s>0||b>0?PARAMS.NL.BOX1.ARBEIDSKORTING_MAX:0); let alK=PARAMS.NL.BOX1.ALGEMENE_HEFFINGSKORTING_MAX; const hAS=PARAMS.NL.BOX1.HK_AFBOUW_START||0; if(br>hAS){alK=Math.max(0,PARAMS.NL.BOX1.ALGEMENE_HEFFINGSKORTING_MAX-((br-hAS)*(PARAMS.NL.BOX1.HK_AFBOUW_FACTOR||0)));} if(br>=gS1){alK=0;} const akAS=39957; if(br>akAS){aK=Math.max(0,PARAMS.NL.BOX1.ARBEIDSKORTING_MAX-((br-akAS)*0.0651));} t=t-alK-aK; t=Math.max(0,t); const tT=t+z; return {bruto:br,tax:tT,netto:br-tT}; }
+    function calculateNetherlands(vals) {
+        if (!PARAMS.NL) return { bruto: 0, tax: 0, netto: 0, wealthTax: 0, breakdown: {} }; let cB=0, cT=0, cN=0; const P=[vals.p1, vals.p2].filter(p=>p);
+        P.forEach(p=>{ const aDI=getAOWDateInfo(p.birthYear); const aM=new Date((p.birthYear||1900)+aDI.years,(p.birthMonth||1)-1+aDI.months); const iP=new Date()>aM; const cA=new Date().getFullYear()-(p.birthYear||1900); const lDN=p.lijfrenteDuration?Number(p.lijfrenteDuration):999; const lIA=cA<lDN; const cP=iP?(p.pensionPublic||0)+(p.pensionPrivate||0)+(lIA?(p.lijfrente||0):0):0; const cAOW=iP?(Number(p.aowYears||0)/50)*(vals.isCouple?PARAMS.AOW_BRUTO_COUPLE:PARAMS.AOW_BRUTO_SINGLE):0; const r=calculateNLNetto(cAOW+cP,p.salary||0,p.business||0,iP); cB+=r.bruto;cT+=r.tax;cN+=r.netto;});
+        const v=vals.isCouple?PARAMS.NL.BOX3.VRIJSTELLING_COUPLE:PARAMS.NL.BOX3.VRIJSTELLING_SINGLE; const wT=Math.max(0,(vals.wealthFinancial||0)-v)*(PARAMS.NL.BOX3.FORFAITAIR_RENDEMENT||0)*(PARAMS.NL.BOX3.TARIEF||0); return {bruto:cB, tax:cT, netto:cN, wealthTax:wT, breakdown: {}};
+    }
+     function calculateNLNetto(pI, s, b, iA) {
+        if (!PARAMS.NL) return { bruto: 0, tax: 0, netto: 0 }; const wNV=b*(1-(PARAMS.NL.BOX1.MKB_WINSTVRIJSTELLING||0)); const zB=b>0?wNV:0; const z=zB*(PARAMS.NL.SOCIALE_LASTEN.ZVW_PERCENTAGE||0); const br=pI+s+wNV; if(br<=0&&z<=0)return{bruto:0,tax:0,netto:0}; if(br<=0&&z>0)return{bruto:0,tax:z,netto:-z}; let t=0; const T=iA?PARAMS.NL.BOX1.TARIEVEN_BOVEN_AOW:PARAMS.NL.BOX1.TARIEVEN_ONDER_AOW; const gS1=PARAMS.NL.BOX1.GRENS_SCHIJF_1||Infinity; if(br<=gS1){t=br*T[0];}else{t=(gS1*T[0])+((br-gS1)*T[1]);} let aK=(s>0||b>0?PARAMS.NL.BOX1.ARBEIDSKORTING_MAX:0); let alK=PARAMS.NL.BOX1.ALGEMENE_HEFFINGSKORTING_MAX; const hAS=PARAMS.NL.BOX1.HK_AFBOUW_START||0; if(br>hAS){alK=Math.max(0,PARAMS.NL.BOX1.ALGEMENE_HEFFINGSKORTING_MAX-((br-hAS)*(PARAMS.NL.BOX1.HK_AFBOUW_FACTOR||0)));} if(br>=gS1){alK=0;} const akAS=39957; if(br>akAS){aK=Math.max(0,PARAMS.NL.BOX1.ARBEIDSKORTING_MAX-((br-akAS)*0.0651));} t=t-alK-aK; t=Math.max(0,t); const tT=t+z; return {bruto:br, tax:tT, netto:br-tT};
+    }
 
     // --- FRANKRIJK ---
     function calculateFrance(vals, currentComparison) { // Added currentComparison
@@ -167,7 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const countryYears = (currentComparison === 'NL') ? Number(p.aowYears||0) : Number(p.beWorkYears||0); // Use correct years for EU total
             tEY += countryYears + Number(p.frWorkYears||0);
 
-            bINLB+=iP?(p.pensionPublic||0):0; tA+=iP?(Number(p.aowYears||0)/50)*(vals.isCouple?PARAMS.AOW_BRUTO_COUPLE:PARAMS.AOW_BRUTO_SINGLE):0;
+            bINLB+=iP?(p.pensionPublic||0):0; tA+=iP?(Number(p.aowYears||0)/50)*(vals.isCouple?PARAMS.AOW_BRUTO_COUPLE:PARAMS.AOW_BRUTO_SINGLE):0; // AOW is always NL based
             tPP+=iP?(p.pensionPrivate||0):0; tL+=iP&&lIA?(p.lijfrente||0):0;
             tLo+=p.salary||0; tW+=p.business||0; tBFA[p.businessType||'services']+=(p.business||0);
             const bePensionBruto = p.bePension || 0;
@@ -177,9 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        const frReqYears = PARAMS.FR_PENSION_YEARS_REQUIRED || 1; // Avoid division by zero
-        const frRate = PARAMS.FR_PENSION_RATE || 0;
-        const frAvgSal = PARAMS.FR_PENSION_AVG_SALARY || 0;
+        const frReqYears = PARAMS.FR_PENSION_YEARS_REQUIRED || 1; const frRate = PARAMS.FR_PENSION_RATE || 0; const frAvgSal = PARAMS.FR_PENSION_AVG_SALARY || 0;
         const frPensionRate = tEY >= frReqYears ? frRate : frRate * (tEY / frReqYears);
         const tFWY=(vals.p1?.frWorkYears||0)+(vals.p2?.frWorkYears||0); const fSP=frReqYears>0?(tFWY/frReqYears)*frAvgSal*frPensionRate:0; const fSPA=iPH?fSP:0;
         const tIV=(vals.p1?.incomeWealth||0)+(vals.p2?.incomeWealth||0); const pT=tIV*(PARAMS.FR.INKOMSTENBELASTING.PFU_TARIEF||0); const pSL=tIV*(PARAMS.FR.SOCIALE_LASTEN.PFU||0);
@@ -252,7 +260,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const gB=fB*(PB.INKOMSTENBELASTING.GEMEENTEBELASTING_GEMIDDELD||0);
 
         let bszb=0; const bszbSchijven = PB.SOCIALE_LASTEN.BIJZONDERE_BIJDRAGE_SCHIJVEN_GEZIN_2024||[];
-        const gezinsInkomenVoorBSZB = tBI_voor_kosten + brutoBePension;
+        const gezinsInkomenVoorBSZB = tBI_voor_kosten + brutoBePension; // Check: Base on income before costs?
         for (const schijf of bszbSchijven) { if (gezinsInkomenVoorBSZB < schijf.grens) { bszb = schijf.bijdrage; break; } bszb = schijf.bijdrage||0; }
 
         const totaleTax = tSL + fB + gB + tRV + bszb;
@@ -306,6 +314,20 @@ document.addEventListener('DOMContentLoaded', () => {
 * NL pensioen >€25k/jaar of overheidspensioen wordt in NL belast.`;
         }
 
+        // --- FRANSE BREAKDOWN ---
+        const frBrutoInkomsten = fr.breakdown.brutoInFR || 0;
+        const frBrutoNietFR = fr.breakdown.brutoInkomenVoorNLBelasting || 0;
+        const frNettoNietFR = fr.breakdown.nettoInkomenUitNL || 0;
+        const tIV_fr = (vals.p1?.incomeWealth || 0) + (vals.p2?.incomeWealth || 0); // Totaal inkomen vermogen
+        const pfuSocLasten_fr = tIV_fr * (PARAMS.FR.SOCIALE_LASTEN.PFU || 0);
+        const beContribAftrek_fr = fr.breakdown.beContribAftrek || 0;
+        const frSocLastenExclPFUBe = (fr.breakdown.socialeLasten || 0) - pfuSocLasten_fr - beContribAftrek_fr;
+        const cakAftrek_fr = fr.breakdown.aftrekCak || 0;
+        const belastbaarInkomen_fr = frBrutoInkomsten - frSocLastenExclPFUBe - beContribAftrek_fr - cakAftrek_fr; // Ruwe benadering voor weergave
+        const pfuTax_fr = tIV_fr * (PARAMS.FR.INKOMSTENBELASTING.PFU_TARIEF || 0);
+        const ibTax_fr = (fr.breakdown.tax || 0) - pfuTax_fr; // IB deel van 'tax'
+        const belastingKrediet_fr = fr.breakdown.belastingKrediet || 0;
+
         return `
 Analyse ${activeComparison}-FR | ${vals.isCouple?'Partners':'Alleenst.'}, Kind:${vals.children||0} | Verm: ${formatCurrency(est)} (${formatCurrency(wf)} fin/${formatCurrency(wp)} vast) ${projP1}${projP2}
 ----------------------------------------------------------------------------------------------------
@@ -314,27 +336,29 @@ ${compContent}
 ----------------------------------------------------------------------------------------------------
 Frankrijk 🇫🇷
 1. Bruto Inkomen Totaal: ${formatCurrency(fr.bruto)}
-   (Incl. NL ovh pensioen bruto: ${formatCurrency(fr.breakdown.brutoInkomenVoorNLBelasting||0)}, FR staatspens.: ${formatCurrency(fr.breakdown.frStatePension||0)})
+   ↳ Inkomen belast in FR: ${formatCurrency(frBrutoInkomsten)}
+   ↳ Inkomen belast in Herkomstland*: ${formatCurrency(frBrutoNietFR)} (Netto: ${formatCurrency(frNettoNietFR)})
 2. Sociale Lasten (Totaal): ${formatCurrency(fr.breakdown.socialeLasten||0)}
-   ↳ FR Soc. Lasten (~9% pens, ~22% loon, ~21% winst): -${formatCurrency((fr.breakdown.socialeLasten||0) - (fr.breakdown.beContribAftrek||0) - (PARAMS.FR.SOCIALE_LASTEN.PFU * tIV))}
-   ↳ FR Soc. Lasten PFU (17.2% verm. inkomen): -${formatCurrency(PARAMS.FR.SOCIALE_LASTEN.PFU * tIV)}
-   ↳ BE Soc. Lasten pensioen (RIZIV/Solid.): -${formatCurrency(fr.breakdown.beContribAftrek||0)} (Betaald in BE)
+   ↳ FR Soc. Lasten (Inkomen): -${formatCurrency(frSocLastenExclPFUBe)} (~9% pens, ~22% loon, ~21% winst)
+   ↳ FR Soc. Lasten (Vermogen PFU 17.2%): -${formatCurrency(pfuSocLasten_fr)}
+   ↳ BE Soc. Lasten (Pensioen RIZIV/Solid.): -${formatCurrency(beContribAftrek_fr)} (Betaald in BE)
    = Subtotaal na SZ: ${formatCurrency(fr.bruto - (fr.breakdown.socialeLasten||0))}
 3. Overige Aftrekposten FR:
-   ↳ Aftrek CAK-bijdrage (NL): -${formatCurrency(fr.breakdown.aftrekCak||0)}
-   ↳ Aftrek BE pensioenbijdragen: -${formatCurrency(fr.breakdown.beContribAftrek||0)}
+   ↳ Aftrek CAK-bijdrage (NL): -${formatCurrency(cakAftrek_fr)}
+   ↳ Aftrek BE pensioenbijdragen: -${formatCurrency(beContribAftrek_fr)}
    ↳ Abattement 65+ (indien van toepassing)
-   = Belastbaar Inkomen FR (vóór IB): ${formatCurrency(fr.bruto - (fr.breakdown.socialeLasten||0) - (fr.breakdown.aftrekCak||0) - (fr.breakdown.beContribAftrek||0) /* - a65plus */ )}
-4. Belastingen FR: ${formatCurrency(fr.breakdown.tax||0)}
-   ↳ Inkomstenbelasting (na Quotient Familial ${fr.breakdown.parts?.toFixed(1)||0} parts): ${formatCurrency(fr.breakdown.calculatedTaxIB||0)}
-   ↳ Belastingkrediet Hulp Huis: +${formatCurrency(fr.breakdown.belastingKrediet||0)} (Verrekend in IB)
-   ↳ Belasting Verm. Inkomen (PFU 12.8%): +${formatCurrency(pT)}
+   = Belastbaar Inkomen FR (vóór IB): ${formatCurrency(belastbaarInkomen_fr - (/* a65plus value not in breakdown */ 0))}
+4. Belastingen FR (Totaal): ${formatCurrency(fr.breakdown.tax||0)}
+   ↳ Inkomstenbelasting (IB) na QF (${fr.breakdown.parts?.toFixed(1)||0} parts): ${formatCurrency(ibTax_fr)}
+      (Resultaat na verrekening Krediet Hulp Huis: +${formatCurrency(belastingKrediet_fr)})
+   ↳ Belasting Verm. Inkomen (PFU 12.8%): +${formatCurrency(pfuTax_fr)}
 5. Totale Lasten (SZ + Belastingen): ${formatCurrency(fr.tax)}
 6. Netto Inkomen: ${formatCurrency(fr.netto)}
 
 7. Vermogen (IFI):
    - Vastgoed: ${formatCurrency(wp)} (> €1.3M belast, excl. hoofd)
    ↳ Aanslag: ${formatCurrency(fr.wealthTax)}
+* Ovh. pensioen/NL pensioen >€25k bij wonen in BE.
         `;
     }
 
