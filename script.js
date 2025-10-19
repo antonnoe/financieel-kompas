@@ -9,36 +9,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Hulpfuncties ---
     function displayError(message) { console.error(message); const el=getEl('calculation-breakdown'); if(el) el.textContent=message; else document.body.innerHTML=`<p style="color:red;padding:20px;">${message}</p>`; }
-    function checkSelectors() { if(!comparisonChoice||!householdType||!inputs||!outputs||!valueOutputs||!outputs.breakdown||!inputs.p1?.birthYear||!inputs.children||!outputs.compareBruto||!valueOutputs.p1?.aowYears||!inputs.simYear){ console.error("UI elements missing."); return false; } return true; } // Added simYear check
-
-    // NIEUW: Functie om simulatie datum/leeftijd te krijgen
-    function getSimulationInfo(birthYear, birthMonth) {
+    function checkSelectors() {
+        if(!comparisonChoice||!householdType||!inputs||!outputs||!valueOutputs||!outputs.breakdown||!inputs.p1?.birthYear||!inputs.children||!outputs.compareBruto||!valueOutputs.p1?.aowYears||!inputs.simYear){
+            console.error("UI elements missing."); return false;
+        } return true;
+    }
+    // Functie om simulatie datum/leeftijd te krijgen
+    function getSimulationInfo(vals) {
         const simYear = inputs.simYear ? parseInt(inputs.simYear.value, 10) : null;
         const simMonth = inputs.simMonth ? parseInt(inputs.simMonth.value, 10) : null;
-        let simulatieDatum, scenarioIsPastOrPresent;
+        let simulatieDatum = new Date();
+        let scenarioIsPastOrPresent = true;
 
-        if (simYear && simMonth && birthYear && birthMonth) {
-            simulatieDatum = new Date(simYear, simMonth - 1, 15); // Use 15th to avoid timezone issues
-            scenarioIsPastOrPresent = simulatieDatum <= new Date(); // Check if scenario is in past/present
-        } else {
-            simulatieDatum = new Date(); // Default to current date
-            scenarioIsPastOrPresent = true;
+        if (simYear && simMonth) {
+            simulatieDatum = new Date(simYear, simMonth - 1, 15);
+            scenarioIsPastOrPresent = simulatieDatum <= new Date();
         }
 
-        let simulatieLeeftijd = null;
-        if (birthYear && birthMonth) {
-             // Calculate age at the simulation date
-             let ageYears = simulatieDatum.getFullYear() - birthYear;
-             let ageMonths = simulatieDatum.getMonth() - (birthMonth - 1);
-             if (ageMonths < 0 || (ageMonths === 0 && simulatieDatum.getDate() < 1)) { // Assuming birth day is 1st for simplicity
-                 ageYears--;
-             }
-             simulatieLeeftijd = ageYears; // Use whole years for age checks
-        }
+        const calcAge = (p) => {
+             if (!p?.birthYear || !p?.birthMonth) return null;
+             let ageYears = simulatieDatum.getFullYear() - p.birthYear;
+             let ageMonths = simulatieDatum.getMonth() - (p.birthMonth - 1);
+             if (ageMonths < 0 || (ageMonths === 0 && simulatieDatum.getDate() < 15)) { ageYears--; }
+             return ageYears;
+         };
+        const simulatieLeeftijdP1 = calcAge(vals.p1);
+        const simulatieLeeftijdP2 = vals.p2 ? calcAge(vals.p2) : null;
 
-        return { simulatieDatum, simulatieLeeftijd, scenarioIsPastOrPresent };
+        return { simulatieDatum, simulatieLeeftijdP1, simulatieLeeftijdP2, scenarioIsPastOrPresent };
     }
-
 
     // --- Initialisatie ---
     async function initializeApp() {
@@ -48,9 +47,9 @@ document.addEventListener('DOMContentLoaded', () => {
             PARAMS = await response.json(); console.log("Config loaded.");
             const fixInf = (arr) => arr?.forEach(item => { if (item.grens === "Infinity") item.grens = Infinity; });
             fixInf(PARAMS?.FR?.INKOMSTENBELASTING?.SCHIJVEN); fixInf(PARAMS?.FR?.IFI?.SCHIJVEN); fixInf(PARAMS?.BE?.INKOMSTENBELASTING?.SCHIJVEN_2025); fixInf(PARAMS?.BE?.SOCIALE_LASTEN?.BIJZONDERE_BIJDRAGE_SCHIJVEN_GEZIN_2024);
-             // NIEUW: Lijfrente fracties
+            // NIEUW: Lijfrente fracties en tarief
             PARAMS.FR.INKOMSTENBELASTING.LIJFRENTE_FRACTIES = [ { age: 50, fraction: 0.7 }, { age: 60, fraction: 0.5 }, { age: 70, fraction: 0.4 }, { age: Infinity, fraction: 0.3 } ];
-             PARAMS.FR.SOCIALE_LASTEN.LIJFRENTE_TARIEF = 0.091; // Aanname: gelijk aan pensioen
+            PARAMS.FR.SOCIALE_LASTEN.LIJFRENTE_TARIEF = 0.091; // Aanname
         } catch (error) { displayError(`Fout laden config: ${error.message}.`); return; }
 
         // 2. Select DOM Elements
@@ -58,10 +57,10 @@ document.addEventListener('DOMContentLoaded', () => {
         comparisonChoice={nl:getEl('btn-nl'),be:getEl('btn-be')}; compareCountryResult=getEl('compare-country-result'); compareCountryLabel=getEl('compare-country-label'); compareCountryFlag=getEl('compare-country-flag');
         householdType={single:getEl('btn-single'),couple:getEl('btn-couple')}; partner2Section=getEl('partner2-section');
         inputs = {
-            simYear: getEl('sim-year'), simMonth: getEl('sim-month'), // Nieuw
+            simYear: getEl('sim-year'), simMonth: getEl('sim-month'),
             children: getEl('slider-children'), cak: getEl('cak-contribution'), homeHelp: getEl('home-help'), wealthFinancial: getEl('slider-wealth-financial'), wealthProperty: getEl('slider-wealth-property'),
-            p1: { birthYear: getEl('birth-year-1'), birthMonth: getEl('birth-month-1'), aowYears: getEl('aow-years-1'), beWorkYears: getEl('be-work-years-1'), frWorkYears: getEl('fr-work-years-1'), bePension: getEl('slider-be-pension-1'), pensionPublic: getEl('slider-pension-public-1'), pensionPrivate: getEl('slider-pension-private-1'), lijfrente: getEl('slider-lijfrente-1'), lijfrenteDuration: getEl('lijfrente-duration-1'), lijfrenteStartAge: getEl('lijfrente-start-1'), incomeWealth: getEl('slider-income-wealth-1'), salary: getEl('slider-salary-1'), business: getEl('slider-business-1'), businessType: getEl('business-type-1') }, // Added lijfrenteStartAge
-            p2: { birthYear: getEl('birth-year-2'), birthMonth: getEl('birth-month-2'), aowYears: getEl('aow-years-2'), beWorkYears: getEl('be-work-years-2'), frWorkYears: getEl('fr-work-years-2'), bePension: getEl('slider-be-pension-2'), pensionPublic: getEl('slider-pension-public-2'), pensionPrivate: getEl('slider-pension-private-2'), lijfrente: getEl('slider-lijfrente-2'), lijfrenteDuration: getEl('lijfrente-duration-2'), lijfrenteStartAge: getEl('lijfrente-start-2'), incomeWealth: getEl('slider-income-wealth-2'), salary: getEl('slider-salary-2'), business: getEl('slider-business-2'), businessType: getEl('business-type-2') },}; // Added lijfrenteStartAge
+            p1: { birthYear: getEl('birth-year-1'), birthMonth: getEl('birth-month-1'), aowYears: getEl('aow-years-1'), beWorkYears: getEl('be-work-years-1'), frWorkYears: getEl('fr-work-years-1'), bePension: getEl('slider-be-pension-1'), pensionPublic: getEl('slider-pension-public-1'), pensionPrivate: getEl('slider-pension-private-1'), lijfrente: getEl('slider-lijfrente-1'), lijfrenteDuration: getEl('lijfrente-duration-1'), lijfrenteStartAge: getEl('lijfrente-start-1'), incomeWealth: getEl('slider-income-wealth-1'), salary: getEl('slider-salary-1'), business: getEl('slider-business-1'), businessType: getEl('business-type-1') },
+            p2: { birthYear: getEl('birth-year-2'), birthMonth: getEl('birth-month-2'), aowYears: getEl('aow-years-2'), beWorkYears: getEl('be-work-years-2'), frWorkYears: getEl('fr-work-years-2'), bePension: getEl('slider-be-pension-2'), pensionPublic: getEl('slider-pension-public-2'), pensionPrivate: getEl('slider-pension-private-2'), lijfrente: getEl('slider-lijfrente-2'), lijfrenteDuration: getEl('lijfrente-duration-2'), lijfrenteStartAge: getEl('lijfrente-start-2'), incomeWealth: getEl('slider-income-wealth-2'), salary: getEl('slider-salary-2'), business: getEl('slider-business-2'), businessType: getEl('business-type-2') },};
         outputs = { compareBruto: getEl('compare-bruto'), compareTax: getEl('compare-tax'), compareNetto: getEl('compare-netto'), wealthTaxCompare: getEl('wealth-tax-compare'), frBruto: getEl('fr-bruto'), frTax: getEl('fr-tax'), frNetto: getEl('fr-netto'), wealthTaxFr: getEl('wealth-tax-fr'), wealthTaxFrExpl: getEl('wealth-tax-fr-expl'), conclusionBar: getEl('conclusion-bar'), conclusionValue: getEl('conclusion-value'), conclusionExpl: getEl('conclusion-expl'), estateTotalDisplay: getEl('estate-total-display'), breakdown: getEl('calculation-breakdown'),};
         valueOutputs = { p1: { aowYears: getEl('value-aow-years-1'), beWorkYears: getEl('value-be-work-years-1'), frWorkYears: getEl('value-fr-work-years-1'), bePension: getEl('value-be-pension-1'), pensionPublic: getEl('value-pension-public-1'), pensionPrivate: getEl('value-pension-private-1'), lijfrente: getEl('value-lijfrente-1'), incomeWealth: getEl('value-income-wealth-1'), salary: getEl('value-salary-1'), business: getEl('value-business-1') }, p2: { aowYears: getEl('value-aow-years-2'), beWorkYears: getEl('value-be-work-years-2'), frWorkYears: getEl('value-fr-work-years-2'), bePension: getEl('value-be-pension-2'), pensionPublic: getEl('value-pension-public-2'), pensionPrivate: getEl('value-pension-private-2'), lijfrente: getEl('value-lijfrente-2'), incomeWealth: getEl('value-income-wealth-2'), salary: getEl('value-salary-2'), business: getEl('value-business-2') }, children: getEl('value-children'), wealthFinancial: getEl('value-wealth-financial'), wealthProperty: getEl('value-wealth-property'),};
         pensionLabels = document.querySelectorAll('.country-origin');
@@ -71,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("DOM elements selected.");
 
         // 4. Setup
-        populateDateDropdowns(); populateSimDateDropdowns(); // Nieuw
+        populateDateDropdowns(); populateSimDateDropdowns();
         setupListeners();
         updateHouseholdType(false); updateComparisonCountry('NL');
         console.log("Application initialized.");
@@ -80,20 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Core Functions ---
     const formatCurrency = (amount, withSign = false) => { const s=amount>0?'+':amount<0?'−':''; const r=Math.round(Math.abs(amount||0)); return `${withSign?s+' ':''}€ ${r.toLocaleString('nl-NL')}`; };
     function populateDateDropdowns() { if(!inputs?.p1?.birthYear||!inputs?.p2?.birthYear)return; const cY=new Date().getFullYear();const M=["Jan","Feb","Mrt","Apr","Mei","Jun","Jul","Aug","Sep","Okt","Nov","Dec"]; [inputs.p1,inputs.p2].forEach(p=>{if(!p||!p.birthYear||!p.birthMonth)return; const yS=p.birthYear,mS=p.birthMonth;if(yS.options.length>0)return; yS.innerHTML='';mS.innerHTML=''; for(let y=cY-18;y>=1940;y--){const o=new Option(y,y);if(y===1960)o.selected=true; yS.add(o);} M.forEach((m,i)=>mS.add(new Option(m,i+1)));}); }
-    // NIEUW: Populate Sim Date Dropdowns
-    function populateSimDateDropdowns() {
-         if (!inputs.simYear || !inputs.simMonth) return;
-         const currentYear = new Date().getFullYear();
-         const simYearSelect = inputs.simYear;
-         const simMonthSelect = inputs.simMonth;
-         simYearSelect.innerHTML = '<option value="">-- Jaar --</option>'; // Add default option
-         simMonthSelect.innerHTML = '<option value="">-- Maand --</option>'; // Add default option
-         for (let year = currentYear + 20; year >= currentYear - 10; year--) {
-             simYearSelect.add(new Option(year, year));
-         }
-         const months = ["Jan", "Feb", "Mrt", "Apr", "Mei", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dec"];
-         months.forEach((month, index) => simMonthSelect.add(new Option(month, index + 1)));
-    }
+    function populateSimDateDropdowns() { if (!inputs.simYear || !inputs.simMonth) return; const cY=new Date().getFullYear(); const sY=inputs.simYear,sM=inputs.simMonth; sY.innerHTML='<option value="">-- Huidig Jaar --</option>'; sM.innerHTML='<option value="">-- Huidige Maand --</option>'; for (let y=cY+20;y>=cY-10;y--){sY.add(new Option(y,y));} const M=["Jan","Feb","Mrt","Apr","Mei","Jun","Jul","Aug","Sep","Okt","Nov","Dec"]; M.forEach((m,i)=>sM.add(new Option(m,i+1))); }
     function getAOWDateInfo(birthYear) { const yr=Number(birthYear); if(!yr||yr<1940)return{years:67,months:0}; if(yr<=1957)return{years:66,months:4}; if(yr===1958)return{years:66,months:7}; if(yr===1959)return{years:66,months:10}; return{years:67,months:0}; }
     function setupListeners() { if(!comparisonChoice||!householdType)return; if(comparisonChoice.nl)comparisonChoice.nl.addEventListener('click',()=>updateComparisonCountry('NL')); if(comparisonChoice.be)comparisonChoice.be.addEventListener('click',()=>updateComparisonCountry('BE')); if(householdType.single)householdType.single.addEventListener('click',()=>updateHouseholdType(false)); if(householdType.couple)householdType.couple.addEventListener('click',()=>updateHouseholdType(true)); const rb=getEl('reset-btn'); if(rb){rb.addEventListener('click',()=>{if(!inputs?.p1?.birthYear)return; document.querySelectorAll('input[type=range]').forEach(i=>{if(i)i.value=0;}); document.querySelectorAll('input[type=checkbox]').forEach(i=>{if(i)i.checked=false;}); document.querySelectorAll('select:not([id*="birth"])').forEach(s=>{if(s)s.selectedIndex=0;}); if(inputs.p1.birthYear)inputs.p1.birthYear.value=1960; if(inputs.p2.birthYear)inputs.p2.birthYear.value=1960; if(inputs.simYear)inputs.simYear.value=""; if(inputs.simMonth)inputs.simMonth.value=""; initialLoad=true; updateHouseholdType(false);updateComparisonCountry('NL');});} const cb=getEl('copy-btn'); if(cb){cb.addEventListener('click',()=>{const txt=outputs?.breakdown?.textContent||''; if(txt&&!txt.includes("Welkom")){navigator.clipboard.writeText(txt).then(()=>{cb.textContent='Gekopieerd!';setTimeout(()=>{cb.textContent='📋 Kopieer Analyse';},2000);}).catch(err=>{console.error('Kopieerfout:',err);alert('Kopiëren mislukt.');});}else{alert("Genereer analyse.");}}); } const ic=getEl('input-panel'); if(ic){ic.addEventListener('input',(e)=>{if(e.target.matches('input, select')){if(e.target.id.includes('aow-years')||e.target.id.includes('fr-work-years')||e.target.id.includes('be-work-years')){adjustWorkYears(e.target.id);}updateScenario();}});}else{console.error("#input-panel missing!");} }
     function toggleCountrySpecificFields(countryCode) {
@@ -118,15 +104,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!isCouple) { Object.keys(inputs.p2).forEach(key=>{ const el=inputs.p2[key]; if(el&&(el.matches('input[type=range]')||el.matches('input[type=checkbox]')||el.matches('select:not([id*="birth"])'))){ if(el.type==='range')el.value=0; if(el.type==='checkbox')el.checked=false; if(el.tagName==='SELECT')el.selectedIndex=0;}}); }
         updateScenario();
     }
-    function getPartnerInput(partnerId) { // Added lijfrenteStartAge
+    function getPartnerInput(partnerId) {
         if (!inputs || !inputs[partnerId] || !inputs[partnerId].birthYear){ console.error(`P data missing ${partnerId}`); return null; }
         const p = inputs[partnerId]; const getN = (el) => el ? Number(el.value) : 0; const getS = (el, d) => el ? el.value : d;
-        // Read lijfrenteStartAge, convert 'aow' to actual age later if needed
         const lijfrenteStart = p.lijfrenteStartAge ? p.lijfrenteStartAge.value : 'aow';
         return { birthYear:getN(p.birthYear), birthMonth:getN(p.birthMonth), aowYears:getN(p.aowYears), beWorkYears:getN(p.beWorkYears), frWorkYears:getN(p.frWorkYears), bePension:getN(p.bePension), pensionPublic:getN(p.pensionPublic), pensionPrivate:getN(p.pensionPrivate), lijfrente:getN(p.lijfrente), lijfrenteDuration:getN(p.lijfrenteDuration), lijfrenteStartAge: lijfrenteStart, incomeWealth:getN(p.incomeWealth), salary:getN(p.salary), business:getN(p.business), businessType:getS(p.businessType,'services') };
     }
-    function adjustWorkYears(changedId) { /* ... (identiek) ... */ if (!inputs?.p1 || !inputs?.p2) return; const pI=changedId.includes('-1')?inputs.p1:inputs.p2; if(!pI)return; let cS,fS; if(activeComparison==='NL'){cS=pI.aowYears;fS=pI.frWorkYears;}else{cS=pI.beWorkYears;fS=pI.frWorkYears;} if(!cS||!fS)return; let cV=Number(cS.value);let fV=Number(fS.value); if(cV+fV>MAX_WORK_YEARS){if(changedId===cS.id){fV=MAX_WORK_YEARS-cV;fS.value=fV;}else{cV=MAX_WORK_YEARS-fV;cS.value=cV;}} updateValueOutputsForYears(); }
-    function updateValueOutputsForYears() { /* ... (identiek) ... */ if(!valueOutputs?.p1||!valueOutputs?.p2||!inputs?.p1||!inputs?.p2)return; const uV=(oE,iE,iC=true,iY=false)=>{if(oE&&iE){const v=iE.value||'0';oE.textContent=iY?v:(iC?formatCurrency(Number(v)):v);}else if(oE){oE.textContent=iY?'0':formatCurrency(0);}}; uV(valueOutputs.p1.aowYears,inputs.p1.aowYears,false,true); uV(valueOutputs.p1.beWorkYears,inputs.p1.beWorkYears,false,true); uV(valueOutputs.p1.frWorkYears,inputs.p1.frWorkYears,false,true); uV(valueOutputs.p1.bePension,inputs.p1.bePension); uV(valueOutputs.p1.pensionPublic,inputs.p1.pensionPublic); uV(valueOutputs.p1.pensionPrivate,inputs.p1.pensionPrivate); uV(valueOutputs.p1.lijfrente,inputs.p1.lijfrente); uV(valueOutputs.p1.incomeWealth,inputs.p1.incomeWealth); uV(valueOutputs.p1.salary,inputs.p1.salary); uV(valueOutputs.p1.business,inputs.p1.business); if(isCouple){ uV(valueOutputs.p2.aowYears,inputs.p2.aowYears,false,true); uV(valueOutputs.p2.beWorkYears,inputs.p2.beWorkYears,false,true); uV(valueOutputs.p2.frWorkYears,inputs.p2.frWorkYears,false,true); uV(valueOutputs.p2.bePension,inputs.p2.bePension); uV(valueOutputs.p2.pensionPublic,inputs.p2.pensionPublic); uV(valueOutputs.p2.pensionPrivate,inputs.p2.pensionPrivate); uV(valueOutputs.p2.lijfrente,inputs.p2.lijfrente); uV(valueOutputs.p2.incomeWealth,inputs.p2.incomeWealth); uV(valueOutputs.p2.salary,inputs.p2.salary); uV(valueOutputs.p2.business,inputs.p2.business); } }
+    function adjustWorkYears(changedId) { if(!inputs?.p1||!inputs?.p2)return; const pI=changedId.includes('-1')?inputs.p1:inputs.p2; if(!pI)return; let cS,fS; if(activeComparison==='NL'){cS=pI.aowYears;fS=pI.frWorkYears;}else{cS=pI.beWorkYears;fS=pI.frWorkYears;} if(!cS||!fS)return; let cV=Number(cS.value);let fV=Number(fS.value); if(cV+fV>MAX_WORK_YEARS){if(changedId===cS.id){fV=MAX_WORK_YEARS-cV;fS.value=fV;}else{cV=MAX_WORK_YEARS-fV;cS.value=cV;}} updateValueOutputsForYears(); }
+    function updateValueOutputsForYears() { if(!valueOutputs?.p1||!valueOutputs?.p2||!inputs?.p1||!inputs?.p2)return; const uV=(oE,iE,iC=true,iY=false)=>{if(oE&&iE){const v=iE.value||'0';oE.textContent=iY?v:(iC?formatCurrency(Number(v)):v);}else if(oE){oE.textContent=iY?'0':formatCurrency(0);}}; uV(valueOutputs.p1.aowYears,inputs.p1.aowYears,false,true); uV(valueOutputs.p1.beWorkYears,inputs.p1.beWorkYears,false,true); uV(valueOutputs.p1.frWorkYears,inputs.p1.frWorkYears,false,true); uV(valueOutputs.p1.bePension,inputs.p1.bePension); uV(valueOutputs.p1.pensionPublic,inputs.p1.pensionPublic); uV(valueOutputs.p1.pensionPrivate,inputs.p1.pensionPrivate); uV(valueOutputs.p1.lijfrente,inputs.p1.lijfrente); uV(valueOutputs.p1.incomeWealth,inputs.p1.incomeWealth); uV(valueOutputs.p1.salary,inputs.p1.salary); uV(valueOutputs.p1.business,inputs.p1.business); if(isCouple){ uV(valueOutputs.p2.aowYears,inputs.p2.aowYears,false,true); uV(valueOutputs.p2.beWorkYears,inputs.p2.beWorkYears,false,true); uV(valueOutputs.p2.frWorkYears,inputs.p2.frWorkYears,false,true); uV(valueOutputs.p2.bePension,inputs.p2.bePension); uV(valueOutputs.p2.pensionPublic,inputs.p2.pensionPublic); uV(valueOutputs.p2.pensionPrivate,inputs.p2.pensionPrivate); uV(valueOutputs.p2.lijfrente,inputs.p2.lijfrente); uV(valueOutputs.p2.incomeWealth,inputs.p2.incomeWealth); uV(valueOutputs.p2.salary,inputs.p2.salary); uV(valueOutputs.p2.business,inputs.p2.business); } }
     function updateScenario() {
         if (!PARAMS || !inputs || !outputs || !valueOutputs || !checkSelectors()) { console.warn("UpdateScenario called too early."); if(outputs?.breakdown) outputs.breakdown.textContent="Laden..."; return; }
         try {
@@ -135,18 +120,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const inputValues = { isCouple, children: Number(inputs.children?.value||0), cak: !!inputs.cak?.checked, homeHelp: Number(inputs.homeHelp?.value||0), wealthFinancial: Number(inputs.wealthFinancial?.value||0), wealthProperty: Number(inputs.wealthProperty?.value||0), p1: p1Input, p2: p2Input };
             inputValues.estate = inputValues.wealthFinancial + inputValues.wealthProperty;
 
-            // Update tooltips dynamically
-            [ { p: p1Input, elData: inputs.p1 }, { p: p2Input, elData: inputs.p2 } ].forEach(item => { /* ... (tooltip logic unchanged from v13) ... */ const yS=activeComparison==='NL'?item.elData?.aowYears:item.elData?.beWorkYears; if(item.p&&yS){const m=50; yS.max=m; const c=Number(yS.value||0); const yP=activeComparison==='NL'?'aowYears':'beWorkYears'; item.p[yP]=Math.min(c,m); if(c>m)yS.value=m; const tt=yS.closest('.form-group')?.querySelector('.tooltip'); if(tt)tt.dataset.text=`Jaren ${activeComparison}(max ${m}). EU(${activeComparison}+FR) max 50.`;} if(item.p&&item.elData?.frWorkYears){const m=50; item.elData.frWorkYears.max=m; const c=Number(item.elData.frWorkYears.value||0); item.p.frWorkYears=Math.min(c,m); if(c>m)item.elData.frWorkYears.value=m; const tt=item.elData.frWorkYears.closest('.form-group')?.querySelector('.tooltip'); if(tt)tt.dataset.text=`Jaren FR(max ${m}). EU(${activeComparison}+FR) max 50.`;}});
+            [ { p: p1Input, elData: inputs.p1 }, { p: p2Input, elData: inputs.p2 } ].forEach(item => { const yS=activeComparison==='NL'?item.elData?.aowYears:item.elData?.beWorkYears; if(item.p&&yS){const m=50; yS.max=m; const c=Number(yS.value||0); const yP=activeComparison==='NL'?'aowYears':'beWorkYears'; item.p[yP]=Math.min(c,m); if(c>m)yS.value=m; const tt=yS.closest('.form-group')?.querySelector('.tooltip'); if(tt)tt.dataset.text=`Jaren ${activeComparison}(max ${m}). EU(${activeComparison}+FR) max 50.`;} if(item.p&&item.elData?.frWorkYears){const m=50; item.elData.frWorkYears.max=m; const c=Number(item.elData.frWorkYears.value||0); item.p.frWorkYears=Math.min(c,m); if(c>m)item.elData.frWorkYears.value=m; const tt=item.elData.frWorkYears.closest('.form-group')?.querySelector('.tooltip'); if(tt)tt.dataset.text=`Jaren FR(max ${m}). EU(${activeComparison}+FR) max 50.`;}});
             updateValueOutputsForYears();
             if(valueOutputs.children) valueOutputs.children.textContent=inputValues.children; if(valueOutputs.wealthFinancial) valueOutputs.wealthFinancial.textContent=formatCurrency(inputValues.wealthFinancial); if(valueOutputs.wealthProperty) valueOutputs.wealthProperty.textContent=formatCurrency(inputValues.wealthProperty); if(outputs.estateTotalDisplay) outputs.estateTotalDisplay.textContent=formatCurrency(inputValues.estate);
 
-            // Calculations
             let compareResults = { bruto: 0, tax: 0, netto: 0, wealthTax: 0, breakdown: {} };
             if (activeComparison === 'NL') { compareResults = calculateNetherlands(inputValues); }
             else if (activeComparison === 'BE') { compareResults = calculateBelgium(inputValues); }
             const frResults = calculateFrance(inputValues, activeComparison);
 
-            // Update UI Results
             if(outputs.compareBruto)outputs.compareBruto.textContent=formatCurrency(compareResults.bruto); if(outputs.compareTax)outputs.compareTax.textContent=formatCurrency(compareResults.tax); if(outputs.compareNetto)outputs.compareNetto.textContent=formatCurrency(compareResults.netto); if(outputs.wealthTaxCompare)outputs.wealthTaxCompare.textContent=formatCurrency(compareResults.wealthTax);
             if(outputs.frBruto)outputs.frBruto.textContent=formatCurrency(frResults.bruto); if(outputs.frTax)outputs.frTax.textContent=formatCurrency(frResults.tax); if(outputs.frNetto)outputs.frNetto.textContent=formatCurrency(frResults.netto); if(outputs.wealthTaxFr)outputs.wealthTaxFr.textContent=formatCurrency(frResults.wealthTax); if(outputs.wealthTaxFrExpl)outputs.wealthTaxFrExpl.textContent=(frResults.wealthTax===0&&inputValues.estate>50000)?"(Vastgoed < €1.3M)":"";
             const frN=frResults.netto||0, compN=compareResults.netto||0, frW=frResults.wealthTax||0, compW=compareResults.wealthTax||0; const delta=(frN-compN)+(compW-frW);
@@ -163,69 +145,72 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- NEDERLAND ---
     function calculateNetherlands(vals) {
         if (!PARAMS.NL) return { bruto: 0, tax: 0, netto: 0, wealthTax: 0, breakdown: {} }; let cB=0, cT=0, cN=0; const P=[vals.p1, vals.p2].filter(p=>p);
-        const { simulatieDatum, simulatieLeeftijdP1, simulatieLeeftijdP2 } = getSimData(vals); // Get sim date/ages
+        const { simulatieDatum, simulatieLeeftijdP1, simulatieLeeftijdP2 } = getSimulationInfo(vals);
 
         P.forEach((p, index)=>{
             const simulatieLeeftijd = (index === 0) ? simulatieLeeftijdP1 : simulatieLeeftijdP2;
             const aDI=getAOWDateInfo(p.birthYear); const aM=new Date((p.birthYear||1900)+aDI.years,(p.birthMonth||1)-1+aDI.months);
-            const isPensioner = simulatieDatum >= aM; // Check against sim date
+            const isPensioner = simulatieLeeftijd !== null && simulatieDatum >= aM; // Check against sim date
             const lDN=p.lijfrenteDuration?Number(p.lijfrenteDuration):999;
-            // Lijfrente Active Check
-            const lijfrenteStart = p.lijfrenteStartAge === 'aow' ? aDI.years : parseInt(p.lijfrenteStartAge || '999', 10);
-            const lijfrenteIsActive = simulatieLeeftijd !== null && simulatieLeeftijd >= lijfrenteStart && simulatieLeeftijd < lDN;
+            const lijfrenteStartAgeVal = p.lijfrenteStartAge === 'aow' ? (aDI.years + Math.floor(aDI.months / 12)) : parseInt(p.lijfrenteStartAge || '999', 10);
+            const lijfrenteIsActive = simulatieLeeftijd !== null && simulatieLeeftijd >= lijfrenteStartAgeVal && simulatieLeeftijd < lDN;
 
             const cP=isPensioner?(p.pensionPublic||0)+(p.pensionPrivate||0):0;
             const cAOW=isPensioner?(Number(p.aowYears||0)/50)*(vals.isCouple?PARAMS.AOW_BRUTO_COUPLE:PARAMS.AOW_BRUTO_SINGLE):0;
-            const cL = lijfrenteIsActive ? (p.lijfrente||0) : 0; // Lijfrente apart
+            const cL = lijfrenteIsActive ? (p.lijfrente||0) : 0;
 
-            const r=calculateNLNetto(cAOW+cP+cL,p.salary||0,p.business||0,isPensioner); // Add lijfrente to taxable income
-            cB+=r.bruto;cT+=r.tax;cN+=r.netto;
+            const r=calculateNLNetto(cAOW+cP+cL, (simulatieLeeftijd !== null && simulatieLeeftijd < 65 ? p.salary||0 : 0), (simulatieLeeftijd !== null && simulatieLeeftijd < 65 ? p.business||0 : 0), isPensioner); // Salaris/winst stopt bij 65 aanname? Of AOW-leeftijd? Laten we AOW-leeftijd nemen.
+            const isWorking = simulatieLeeftijd !== null && simulatieDatum < aM; // Werkt tot AOW-leeftijd
+            const r2=calculateNLNetto(cAOW+cP+cL, isWorking ? p.salary||0 : 0, isWorking ? p.business||0 : 0, isPensioner);
+            cB+=r2.bruto;cT+=r2.tax;cN+=r2.netto;
         });
         const v=vals.isCouple?(PARAMS.NL.BOX3.VRIJSTELLING_COUPLE||0):(PARAMS.NL.BOX3.VRIJSTELLING_SINGLE||0); const wT=Math.max(0,(vals.wealthFinancial||0)-v)*(PARAMS.NL.BOX3.FORFAITAIR_RENDEMENT||0)*(PARAMS.NL.BOX3.TARIEF||0);
-        return {bruto:cB, tax:cT, netto:cN, wealthTax:wT, breakdown: { simulatieDatum: simulatieDatum }}; // Pass sim date to breakdown
+        return {bruto:cB, tax:cT, netto:cN, wealthTax:wT, breakdown: { simulatieDatum: simulatieDatum }};
     }
-     function calculateNLNetto(pI, s, b, iA) { /* ... (identiek) ... */ if(!PARAMS.NL)return{bruto:0,tax:0,netto:0}; const wNV=b*(1-(PARAMS.NL.BOX1.MKB_WINSTVRIJSTELLING||0)); const zB=b>0?wNV:0; const z=zB*(PARAMS.NL.SOCIALE_LASTEN.ZVW_PERCENTAGE||0); const br=pI+s+wNV; if(br<=0&&z<=0)return{bruto:0,tax:0,netto:0}; if(br<=0&&z>0)return{bruto:0,tax:z,netto:-z}; let t=0; const T=iA?PARAMS.NL.BOX1.TARIEVEN_BOVEN_AOW:PARAMS.NL.BOX1.TARIEVEN_ONDER_AOW; const gS1=PARAMS.NL.BOX1.GRENS_SCHIJF_1||Infinity; if(br<=gS1){t=br*T[0];}else{t=(gS1*T[0])+((br-gS1)*T[1]);} let aK=(s>0||b>0?(PARAMS.NL.BOX1.ARBEIDSKORTING_MAX||0):0); let alK=PARAMS.NL.BOX1.ALGEMENE_HEFFINGSKORTING_MAX||0; const hAS=PARAMS.NL.BOX1.HK_AFBOUW_START||0; if(br>hAS){alK=Math.max(0,alK-((br-hAS)*(PARAMS.NL.BOX1.HK_AFBOUW_FACTOR||0)));} if(br>=gS1){alK=0;} const akAS=39957; if(br>akAS){aK=Math.max(0,aK-((br-akAS)*0.0651));} t=t-alK-aK; t=Math.max(0,t); const tT=t+z; return {bruto:br, tax:tT, netto:br-tT}; }
+     function calculateNLNetto(pI, s, b, iA) { if(!PARAMS.NL)return{bruto:0,tax:0,netto:0}; const wNV=b*(1-(PARAMS.NL.BOX1.MKB_WINSTVRIJSTELLING||0)); const zB=b>0?wNV:0; const z=zB*(PARAMS.NL.SOCIALE_LASTEN.ZVW_PERCENTAGE||0); const br=pI+s+wNV; if(br<=0&&z<=0)return{bruto:0,tax:0,netto:0}; if(br<=0&&z>0)return{bruto:0,tax:z,netto:-z}; let t=0; const T=iA?PARAMS.NL.BOX1.TARIEVEN_BOVEN_AOW:PARAMS.NL.BOX1.TARIEVEN_ONDER_AOW; const gS1=PARAMS.NL.BOX1.GRENS_SCHIJF_1||Infinity; if(br<=gS1){t=br*T[0];}else{t=(gS1*T[0])+((br-gS1)*T[1]);} let aK=(s>0||b>0?(PARAMS.NL.BOX1.ARBEIDSKORTING_MAX||0):0); let alK=PARAMS.NL.BOX1.ALGEMENE_HEFFINGSKORTING_MAX||0; const hAS=PARAMS.NL.BOX1.HK_AFBOUW_START||0; if(br>hAS){alK=Math.max(0,alK-((br-hAS)*(PARAMS.NL.BOX1.HK_AFBOUW_FACTOR||0)));} if(br>=gS1){alK=0;} const akAS=39957; if(br>akAS){aK=Math.max(0,aK-((br-akAS)*0.0651));} t=t-alK-aK; t=Math.max(0,t); const tT=t+z; return {bruto:br, tax:tT, netto:br-tT}; }
 
     // --- FRANKRIJK ---
-    function calculateFrance(vals, currentComparison) { // Added currentComparison
+    function calculateFrance(vals, currentComparison) {
         if (!PARAMS.FR || !PARAMS.NL || !PARAMS.BE) return { bruto: 0, tax: 0, netto: 0, wealthTax: 0, breakdown: {} };
-        let bINLB=0, tA=0, tPP=0, tL=0, tLo=0, tW=0, iPH=false;
-        let tBFA={services:0, rental:0}; let tEY=0; // Total EU Years
+        let bINLB=0, tA=0, tPP=0, tLo=0, tW=0, iPH=false;
+        let tBFA={services:0, rental:0}; let tEY=0;
         let totalBePension = 0, totalBePensionContributions = 0;
         let totalLijfrenteBruto = 0, totalLijfrenteBelastbaar = 0, lijfrenteSocLasten = 0;
         const P=[vals.p1, vals.p2].filter(p=>p);
-        const { simulatieDatum, simulatieLeeftijdP1, simulatieLeeftijdP2 } = getSimData(vals); // Get sim date/ages
+        const { simulatieDatum, simulatieLeeftijdP1, simulatieLeeftijdP2 } = getSimulationInfo(vals);
 
         P.forEach((p, index)=>{
             const simulatieLeeftijd = (index === 0) ? simulatieLeeftijdP1 : simulatieLeeftijdP2;
             const aDI=getAOWDateInfo(p.birthYear); const aM=new Date((p.birthYear||1900)+aDI.years,(p.birthMonth||1)-1+aDI.months);
-            const isPensioner = simulatieDatum >= aM; // Check against sim date
-            if(isPensioner) iPH = true; // Household is pensioner if at least one is past AOW date on sim date
+            const isPensioner = simulatieLeeftijd !== null && simulatieDatum >= aM;
+            const isWorking = simulatieLeeftijd !== null && simulatieDatum < aM; // Aanname: werkt tot AOW-leeftijd
+            if(isPensioner) iPH = true;
             const lDN=p.lijfrenteDuration?Number(p.lijfrenteDuration):999;
-            const lijfrenteStartAgeVal = p.lijfrenteStartAge === 'aow' ? aDI.years : parseInt(p.lijfrenteStartAge || '999', 10);
+            const lijfrenteStartAgeVal = p.lijfrenteStartAge === 'aow' ? (aDI.years + Math.floor(aDI.months / 12)) : parseInt(p.lijfrenteStartAge || '999', 10);
             const lijfrenteIsActive = simulatieLeeftijd !== null && simulatieLeeftijd >= lijfrenteStartAgeVal && simulatieLeeftijd < lDN;
 
             const countryYears = (currentComparison === 'NL') ? Number(p.aowYears||0) : Number(p.beWorkYears||0);
             tEY += countryYears + Number(p.frWorkYears||0);
 
             bINLB+=isPensioner?(p.pensionPublic||0):0;
-            // AOW only if pensioner on sim date
             tA+=isPensioner?(Number(p.aowYears||0)/50)*(vals.isCouple?PARAMS.AOW_BRUTO_COUPLE:PARAMS.AOW_BRUTO_SINGLE):0;
             tPP+=isPensioner?(p.pensionPrivate||0):0;
-            // Calculate Lijfrente separately for FR tax rules
+            
             const currentLijfrente = lijfrenteIsActive ? (p.lijfrente||0) : 0;
             totalLijfrenteBruto += currentLijfrente;
             if (currentLijfrente > 0 && simulatieLeeftijd !== null) {
                 let belastbareFractie = 0.7; // Default < 50
-                for (const frac of PARAMS.FR.INKOMSTENBELASTING.LIJFRENTE_FRACTIES) {
+                for (const frac of (PARAMS.FR.INKOMSTENBELASTING.LIJFRENTE_FRACTIES||[])) {
                     if (simulatieLeeftijd < frac.age) { belastbareFractie = frac.fraction; break; }
+                    belastbareFractie = frac.fraction; // Keep updating to last one if older
                 }
                 const lijfrenteBelastbaarDeel = currentLijfrente * belastbareFractie;
                 totalLijfrenteBelastbaar += lijfrenteBelastbaarDeel;
                 lijfrenteSocLasten += lijfrenteBelastbaarDeel * (PARAMS.FR.SOCIALE_LASTEN.LIJFRENTE_TARIEF || 0);
             }
 
-            tLo+=(p.salary||0); tW+=(p.business||0); tBFA[p.businessType||'services']+=(p.business||0);
+            tLo+= isWorking ? (p.salary||0) : 0; tW+= isWorking ? (p.business||0) : 0;
+            if(isWorking) tBFA[p.businessType||'services']+=(p.business||0);
             const bePensionBruto = p.bePension || 0;
             if (isPensioner && bePensionBruto > 0) {
                 totalBePension += bePensionBruto;
@@ -235,76 +220,62 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const frReqYears = PARAMS.FR_PENSION_YEARS_REQUIRED || 1; const frRate = PARAMS.FR_PENSION_RATE || 0; const frAvgSal = PARAMS.FR_PENSION_AVG_SALARY || 0;
         const frPensionRate = tEY >= frReqYears ? frRate : frRate * (tEY / frReqYears);
-        const tFWY=(vals.p1?.frWorkYears||0)+(vals.p2?.frWorkYears||0); const fSP=frReqYears>0?(tFWY/frReqYears)*frAvgSal*frPensionRate:0;
-        // FR State pension only active if household is pensioner on sim date
-        const fSPA=iPH?fSP:0;
-
+        const tFWY=(vals.p1?.frWorkYears||0)+(vals.p2?.frWorkYears||0); const fSP=frReqYears>0?(tFWY/frReqYears)*frAvgSal*frPensionRate:0; const fSPA=iPH?fSP:0;
         const tIV=(vals.p1?.incomeWealth||0)+(vals.p2?.incomeWealth||0); const pT=tIV*(PARAMS.FR.INKOMSTENBELASTING.PFU_TARIEF||0); const pSL=tIV*(PARAMS.FR.SOCIALE_LASTEN.PFU||0);
         const nlTR=PARAMS.NL?.BOX1?.TARIEVEN_BOVEN_AOW?.[0]||0; const nINL=bINLB*(1-nlTR);
-        const tPIF_NL_BE=tA+tPP+fSPA + totalBePension; // Total non-lijfrente pension for FR tax base
-        // FR Sociale lasten op pensioen (excl lijfrente, excl BE pensioen)
+        const tPIF_NL_BE=tA+tPP+fSPA + totalBePension;
         const sLP=(tA+tPP+fSPA)*(PARAMS.FR.SOCIALE_LASTEN.PENSIOEN||0);
         const sLS=tLo*(PARAMS.FR.SOCIALE_LASTEN.SALARIS||0); const sLW=(tBFA.services*(PARAMS.FR.SOCIALE_LASTEN.WINST_DIENSTEN||0))+(tBFA.rental*(PARAMS.FR.SOCIALE_LASTEN.WINST_VERHUUR||0));
         const tSL_excl_lijfrente = sLP + sLS + sLW;
         const wNA=(tBFA.services*(1-(PARAMS.FR.INKOMSTENBELASTING.ABATTEMENT_WINST_DIENSTEN||0)))+(tBFA.rental*(1-(PARAMS.FR.INKOMSTENBELASTING.ABATTEMENT_WINST_VERHUUR||0)));
-
-        // Belastbaar inkomen: start with non-lijfrente income, subtract non-lijfrente FR soclast, add belastbaar deel lijfrente
         let bI=(tPIF_NL_BE+tLo+wNA) - tSL_excl_lijfrente + totalLijfrenteBelastbaar;
-        bI -= totalBePensionContributions; // Aftrek BE bijdragen
-        const aC=vals.cak?(PARAMS.FR.CAK_BIJDRAGE_GEMIDDELD||0):0; bI-=aC;
-        let a65=0; if(iPH){const aP=P.filter(p=>{const aI=getAOWDateInfo(p.birthYear);const aMo=new Date((p.birthYear||1900)+aI.years,(p.birthMonth||1)-1+aI.months);return simulatieDatum>=aMo;}).length; const iBFA_65=tPIF_NL_BE + totalLijfrenteBruto; /* Base for 65+ = all pensions incl lijfrente? Check rules. Assuming yes. */ const d1=PARAMS.FR.INKOMSTENBELASTING.ABATTEMENT_65PLUS.DREMPEL1||Infinity; const d2=PARAMS.FR.INKOMSTENBELASTING.ABATTEMENT_65PLUS.DREMPEL2||Infinity; const af1=PARAMS.FR.INKOMSTENBELASTING.ABATTEMENT_65PLUS.AFTREK1||0; const af2=PARAMS.FR.INKOMSTENBELASTING.ABATTEMENT_65PLUS.AFTREK2||0; if(iBFA_65<=d1*aP){a65=af1*aP;}else if(iBFA_65<=d2*aP){a65=af2*aP;}} bI-=a65;
-
+        bI -= totalBePensionContributions; const aC=vals.cak?(PARAMS.FR.CAK_BIJDRAGE_GEMIDDELD||0):0; bI-=aC;
+        let a65=0; if(iPH){const aP=P.filter(p=>{const aI=getAOWDateInfo(p.birthYear);const aMo=new Date((p.birthYear||1900)+aI.years,(p.birthMonth||1)-1+aI.months);return simulatieDatum>=aMo;}).length; const iBFA_65=tPIF_NL_BE + totalLijfrenteBruto; const d1=PARAMS.FR.INKOMSTENBELASTING.ABATTEMENT_65PLUS.DREMPEL1||Infinity; const d2=PARAMS.FR.INKOMSTENBELASTING.ABATTEMENT_65PLUS.DREMPEL2||Infinity; const af1=PARAMS.FR.INKOMSTENBELASTING.ABATTEMENT_65PLUS.AFTREK1||0; const af2=PARAMS.FR.INKOMSTENBELASTING.ABATTEMENT_65PLUS.AFTREK2||0; if(iBFA_65<=d1*aP){a65=af1*aP;}else if(iBFA_65<=d2*aP){a65=af2*aP;}} bI-=a65;
         const parts=(vals.isCouple?2:1)+(vals.children>2?(vals.children-2)*1+1:(vals.children||0)*0.5); const iPP=parts>0?Math.max(0,bI)/parts:0;
         let bPP=0,vG=0; (PARAMS.FR.INKOMSTENBELASTING.SCHIJVEN||[]).forEach(s=>{const cG=s.grens===Infinity?Infinity:Number(s.grens); bPP+=Math.max(0,Math.min(iPP,cG)-vG)*s.tarief; vG=cG;});
         let tax = bPP * parts;
         const bP = vals.isCouple ? 2 : 1; const cP = parts - bP; let tWC = 0;
         if (cP > 0 && bP > 0) { const iPB = Math.max(0, bI) / bP; vG = 0; (PARAMS.FR.INKOMSTENBELASTING.SCHIJVEN||[]).forEach(s=>{const cG=s.grens===Infinity?Infinity:Number(s.grens); tWC+=Math.max(0,Math.min(iPB,cG)-vG)*s.tarief; vG=cG;}); tWC*=bP; const mV=cP*2*(PARAMS.FR.INKOMSTENBELASTING.QUOTIENT_PLAFOND_PER_HALF_PART||0); const cA=tWC-tax; if (cA > mV) { tax = tWC - mV; } }
         const bK=(vals.homeHelp||0)*(PARAMS.FR.HULP_AAN_HUIS_KREDIET_PERCENTAGE||0); tax=tax-bK;
-
-        // Bruto in FR = alle in FR belaste stromen (incl. hele lijfrente) + vermogensinkomen
         const bIF = tPIF_NL_BE + totalLijfrenteBruto + tLo + tW + tIV;
-        const br = bIF + bINLB; // Totaal bruto = FR-stromen + NL-Ovh pensioen
-
-        // Totale sociale lasten = FR lasten (excl lijfrente) + FR lasten PFU + FR lasten lijfrente (op belastbaar deel) + BE lasten (betaald in BE)
+        const br = bIF + bINLB;
         const totaleSocialeLastenFrankrijk = tSL_excl_lijfrente + pSL + lijfrenteSocLasten + totalBePensionContributions;
-
-        const tIF = totaleSocialeLastenFrankrijk + pT + Math.max(0,tax); // Totale FR Tax = Alle SZ + PFU Tax + FR IB
-        // Netto = (Bruto in FR - Alle SZ lasten - PFU tax) + Netto Inkomen uit NL - FR IB (positief deel) + FR IB (negatief deel/credit)
+        const tIF = totaleSocialeLastenFrankrijk + pT + Math.max(0,tax);
         const nt = (bIF - totaleSocialeLastenFrankrijk - pT) + nINL - Math.max(0,tax) + (tax<0?Math.abs(tax):0);
-
         let wT=0; const wPN=vals.wealthProperty||0; const ifiStart = PARAMS.FR.IFI.DREMPEL_START || Infinity; if(wPN>ifiStart){let tA=wPN;wT=0;let pL=800000;for(const s of (PARAMS.FR.IFI.SCHIJVEN||[])){const cG=s.grens===Infinity?Infinity:Number(s.grens);if(tA<=pL)break; const aIS=Math.max(0,Math.min(tA,cG)-pL); wT+=aIS*s.tarief; pL=cG; if(tA<=cG)break;}}
-        return {bruto:br,tax:tIF,netto:nt,wealthTax:wT, breakdown:{ simulatieDatum: simulatieDatum, socialeLasten:totaleSocialeLastenFrankrijk, aftrekCak:aC, beContribAftrek: totalBePensionContributions, belastingKrediet:bK,tax:Math.max(0,tax)+pT,calculatedTaxIB:tax,parts:parts,nettoInkomenUitNL:nINL,brutoInFR:bIF,brutoInkomenVoorNLBelasting:bINLB,frStatePension:fSPA, lijfrenteBruto: totalLijfrenteBruto, lijfrenteBelastbaar: totalLijfrenteBelastbaar }};
+        return {bruto:br,tax:tIF,netto:nt,wealthTax:wT, breakdown:{ simulatieDatum: simulatieDatum, socialeLasten:totaleSocialeLastenFrankrijk, aftrekCak:aC, beContribAftrek: totalBePensionContributions, belastingKrediet:bK,tax:Math.max(0,tax)+pT,calculatedTaxIB:tax,parts:parts,nettoInkomenUitNL:nINL,brutoInFR:bIF,brutoInkomenVoorNLBelasting:bINLB,frStatePension:fSPA, lijfrenteBruto: totalLijfrenteBruto, lijfrenteBelastbaar: totalLijfrenteBelastbaar, pfuTax: pT, pfuSocLasten: pSL, frSocLastenInkomen: tSL_excl_lijfrente, lijfrenteSocLasten: lijfrenteSocLasten }};
     }
 
     // --- BELGIË ---
     function calculateBelgium(vals) {
         if (!PARAMS.BE || !PARAMS.NL) return { bruto: 0, tax: 0, netto: 0, wealthTax: 0, breakdown: {} };
         let tB=0, tBI_voor_kosten=0, tSL=0, tIV=0, tRV=0, nPNLB=0;
-        let brutoBePension=0, bePensionContrib=0, tLoonInkomenVoorKosten=0;
+        let brutoBePension=0, bePensionContrib=0;
         let p1LoonVoorKosten = 0, p2LoonVoorKosten = 0;
         const P=[vals.p1, vals.p2].filter(p=>p); const PB=PARAMS.BE;
-        const { simulatieDatum, simulatieLeeftijdP1, simulatieLeeftijdP2 } = getSimData(vals);
+        const { simulatieDatum, simulatieLeeftijdP1, simulatieLeeftijdP2 } = getSimulationInfo(vals);
 
         P.forEach((p, index) => {
             const simulatieLeeftijd = (index === 0) ? simulatieLeeftijdP1 : simulatieLeeftijdP2;
             const s=p.salary||0, b=p.business||0; const pP=p.pensionPublic||0, pPr=p.pensionPrivate||0;
             const l=p.lijfrente||0, iW=p.incomeWealth||0; const aY=p.aowYears||0; const beP=p.bePension||0;
 
-            const rW=s*(PB.SOCIALE_LASTEN.WERKNEMER_RSZ_PERCENTAGE||0); const nettoLoonVoorKosten=s-rW; tSL+=rW; tBI_voor_kosten+=nettoLoonVoorKosten; tLoonInkomenVoorKosten+=nettoLoonVoorKosten; tB+=s;
-            if (index === 0) p1LoonVoorKosten = nettoLoonVoorKosten; else p2LoonVoorKosten = nettoLoonVoorKosten;
-            let rZ=0; if(b>0){let iR=b,vG=0; (PB.SOCIALE_LASTEN.ZELFSTANDIGE_SCHIJVEN||[]).forEach(sch=>{const cG=Number(sch.grens);let bIS=Math.max(0,Math.min(iR,cG-vG));rZ+=bIS*sch.tarief;iR-=bIS;vG=cG;});} const nettoWinstVoorKosten=b-rZ; tSL+=rZ; tBI_voor_kosten+=nettoWinstVoorKosten; tB+=b;
-
             const aDI=getAOWDateInfo(p.birthYear); const aM=new Date((p.birthYear||1900)+aDI.years,(p.birthMonth||1)-1+aDI.months);
-            const isPensioner = simulatieDatum >= aM; // Check tegen sim datum
+            const isPensioner = simulatieLeeftijd !== null && simulatieDatum >= aM;
+            const isWorking = simulatieLeeftijd !== null && simulatieDatum < aM;
             const lDN=p.lijfrenteDuration?Number(p.lijfrenteDuration):999;
-            const lijfrenteStartAgeVal = p.lijfrenteStartAge === 'aow' ? aDI.years : parseInt(p.lijfrenteStartAge || '999', 10);
+            const lijfrenteStartAgeVal = p.lijfrenteStartAge === 'aow' ? (aDI.years + Math.floor(aDI.months / 12)) : parseInt(p.lijfrenteStartAge || '999', 10);
             const lijfrenteIsActive = simulatieLeeftijd !== null && simulatieLeeftijd >= lijfrenteStartAgeVal && simulatieLeeftijd < lDN;
 
-            const cAOW=isPensioner?(aY/50)*(vals.isCouple?PARAMS.AOW_BRUTO_COUPLE:PARAMS.AOW_BRUTO_SINGLE):0; const cABP=isPensioner?pP:0; const cP=isPensioner?pPr:0; const cL=lijfrenteIsActive?l:0; // Lijfrente actief op sim datum?
-            const cBEP = isPensioner ? beP : 0; brutoBePension += cBEP;
+            const loon = isWorking ? s : 0; const winst = isWorking ? b : 0;
+            const rW=loon*(PB.SOCIALE_LASTEN.WERKNEMER_RSZ_PERCENTAGE||0); const nettoLoonVoorKosten=loon-rW; tSL+=rW; tBI_voor_kosten+=nettoLoonVoorKosten;
+            if (index === 0) p1LoonVoorKosten = nettoLoonVoorKosten; else p2LoonVoorKosten = nettoLoonVoorKosten;
+            let rZ=0; if(winst>0){let iR=winst,vG=0; (PB.SOCIALE_LASTEN.ZELFSTANDIGE_SCHIJVEN||[]).forEach(sch=>{const cG=Number(sch.grens);let bIS=Math.max(0,Math.min(iR,cG-vG));rZ+=bIS*sch.tarief;iR-=bIS;vG=cG;});} const nettoWinstVoorKosten=winst-rZ; tSL+=rZ; tBI_voor_kosten+=nettoWinstVoorKosten;
+            tB+=loon+winst;
 
-            if(cABP>0){nPNLB+=cABP;} const tOP=cAOW+cP+cL; // Lijfrente hoort bij 'overig pensioen' voor <25k check
-            if(tOP>(PB.INKOMSTENBELASTING.PENSIOEN_NL_DREMPEL_VOOR_BELASTING_IN_NL||Infinity)){nPNLB+=tOP;}else{tBI_voor_kosten+=tOP;} // Incl. Lijfrente in BE belastbaar basis indien <25k
+            const cAOW=isPensioner?(aY/50)*(vals.isCouple?PARAMS.AOW_BRUTO_COUPLE:PARAMS.AOW_BRUTO_SINGLE):0; const cABP=isPensioner?pP:0; const cP=isPensioner?pPr:0; const cL=lijfrenteIsActive?l:0;
+            const cBEP = isPensioner ? beP : 0; brutoBePension += cBEP;
+            if(cABP>0){nPNLB+=cABP;} const tOP=cAOW+cP+cL; if(tOP>(PB.INKOMSTENBELASTING.PENSIOEN_NL_DREMPEL_VOOR_BELASTING_IN_NL||Infinity)){nPNLB+=tOP;}else{tBI_voor_kosten+=tOP;}
             tB+=cABP+tOP+cBEP; tIV+=iW;
         });
 
@@ -314,7 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const nettoBePension = brutoBePension - bePensionContrib;
 
         const nlTR=PARAMS.NL?.BOX1?.TARIEVEN_BOVEN_AOW?.[0]||0; const nINL=nPNLB*(1-nlTR);
-        tB+=nPNLB+tIV; // Final Total Gross
+        tB+=nPNLB+tIV;
 
         const maxKostenPP = PB.INKOMSTENBELASTING.FORFAIT_BEROEPSKOSTEN_WERKNEMER_MAX||0;
         const kostenPercentage = PB.INKOMSTENBELASTING.FORFAIT_BEROEPSKOSTEN_WERKNEMER_PERCENTAGE||0;
@@ -323,18 +294,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (vals.p2 && isCouple) forfaitKosten += Math.min(p2LoonVoorKosten * kostenPercentage, maxKostenPP);
 
         const tBI_na_kosten = Math.max(0, tBI_voor_kosten - forfaitKosten);
-        const totaalBelastbaarInkomen = tBI_na_kosten + nettoBePension; // Inkomen na kosten + Netto BE Pensioen
+        const totaalBelastbaarInkomen = tBI_na_kosten + nettoBePension;
 
         const spaarRenteDeel=tIV/2, overigRenteDividendDeel=tIV/2; const vrijstSpaarPP=PB.INKOMSTENBELASTING.ROERENDE_VOORHEFFING_VRIJSTELLING_SPAAR_PP||0; const vrijstSpaarTotaal=vrijstSpaarPP*(vals.isCouple?2:1); const belasteSpaarRente=Math.max(0,spaarRenteDeel-vrijstSpaarTotaal); const rvSpaar=belasteSpaarRente*(PB.INKOMSTENBELASTING.ROERENDE_VOORHEFFING_TARIEF_SPAAR||0);
         const dividendDeelOverig=overigRenteDividendDeel/2, renteDeelOverig=overigRenteDividendDeel/2; const vrijstDividendPP=PB.INKOMSTENBELASTING.ROERENDE_VOORHEFFING_VRIJSTELLING_DIVIDEND_PP||0; const vrijstDividendTotaal=vrijstDividendPP*(vals.isCouple?2:1); const belastbaarDividend=Math.max(0,dividendDeelOverig-vrijstDividendTotaal); const rvOverig=(belastbaarDividend+renteDeelOverig)*(PB.INKOMSTENBELASTING.ROERENDE_VOORHEFFING_TARIEF_ALGEMEEN||0); tRV=rvSpaar+rvOverig;
 
         let fB=0, iRF=totaalBelastbaarInkomen, vGF=0; (PB.INKOMSTENBELASTING.SCHIJVEN_2025||[]).forEach(sch=>{const g=sch.grens;let bIS=Math.max(0,Math.min(iRF,g-vGF));fB+=bIS*sch.tarief;iRF-=bIS;vGF=g;});
         let tV=(PB.INKOMSTENBELASTING.BASIS_VRIJSTELLING||0)*(vals.isCouple?2:1); const nC=vals.children||0; if(nC>0){const kA=PB.INKOMSTENBELASTING.VRIJSTELLING_PER_KIND||[0,0,0]; const eK=PB.INKOMSTENBELASTING.EXTRA_VRIJSTELLING_KIND_MEER_DAN_3||0; if(nC===1)tV+=kA[0]; else if(nC===2)tV+=kA[1]; else if(nC===3)tV+=kA[2]; else if(nC>3){tV+=kA[2]+(nC-3)*eK;}}
-        const lT=(PB.INKOMSTENBELASTING.SCHIJVEN_2025||[{tarief:0}])[0].tarief; const bK=Math.min(totaalBelastbaarInkomen,tV)*lT; fB=Math.max(0,fB-bK);
+        const lT=(PB.INKOMSTENBELASTING.SCHIJVEN_2025||[{tarief:0.25}])[0].tarief; const bK=Math.min(totaalBelastbaarInkomen,tV)*lT; fB=Math.max(0,fB-bK);
         const gB=fB*(PB.INKOMSTENBELASTING.GEMEENTEBELASTING_GEMIDDELD||0);
 
         let bszb=0; const bszbSchijven = PB.SOCIALE_LASTEN.BIJZONDERE_BIJDRAGE_SCHIJVEN_GEZIN_2024||[];
-        const gezinsInkomenVoorBSZB = tBI_voor_kosten + brutoBePension; // Baseer op inkomen vóór kosten + bruto BE pensioen
+        const gezinsInkomenVoorBSZB = tBI_voor_kosten + brutoBePension; // BSZB basis = netto inkomen voor kosten + bruto pensioen
         for (const schijf of bszbSchijven) { if (gezinsInkomenVoorBSZB < schijf.grens) { bszb = schijf.bijdrage; break; } bszb = schijf.bijdrage||0; }
 
         const totaleTax = tSL + fB + gB + tRV + bszb;
@@ -347,10 +318,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!vals || !compare || !fr || !compare.breakdown || !fr.breakdown) { return "Fout: Analyse data incompleet."; }
         const wf=vals.wealthFinancial||0, wp=vals.wealthProperty||0; const est=wf+wp; const nlTR=PARAMS.NL?.BOX1?.TARIEVEN_BOVEN_AOW?.[0]||0;
         const tIV = (vals.p1?.incomeWealth || 0) + (vals.p2?.incomeWealth || 0);
-        const { simulatieDatum } = compare.breakdown; // Haal sim datum uit breakdown
-        const simDatumStr = simulatieDatum ? `per ${simulatieDatum.toLocaleString('nl-NL', { month: 'long', year: 'numeric' })}` : '(huidige situatie)';
+        // Gebruik de simulatiedatum uit een van de breakdowns (ze zouden hetzelfde moeten zijn)
+        const { simulatieDatum } = compare.breakdown;
+        const simDatumStr = (inputs.simYear.value && inputs.simMonth.value) ? `per ${simulatieDatum.toLocaleString('nl-NL', { month: 'long', year: 'numeric' })}` : '(huidige situatie)';
 
-        const getRetirementProjection = (p, idx) => { if(!p)return''; const aDI=getAOWDateInfo(p.birthYear); const aM=new Date((p.birthYear||1900)+aDI.years,(p.birthMonth||1)-1+aDI.months); const pL=vals.isCouple?`(P${idx+1})`:''; const { simulatieDatum } = getSimulationInfo(p.birthYear, p.birthMonth); if(!simulatieDatum) return ''; if(simulatieDatum<aM){const n=simulatieDatum; let yD=aM.getFullYear()-n.getFullYear();let mD=aM.getMonth()-n.getMonth();if(mD<0){yD--;mD+=12;}return `\n    ↳ Pensioen${pL} over ${yD}j,${mD}m (vanaf sim. datum)`;} return `\n    ↳ Pensioen${pL} loopt (op sim. datum)`; };
+        const getRetirementProjection = (p, idx) => { if(!p||!p.birthYear)return''; const aDI=getAOWDateInfo(p.birthYear); const aM=new Date((p.birthYear||1900)+aDI.years,(p.birthMonth||1)-1+aDI.months); const pL=vals.isCouple?`(P${idx+1})`:''; if(!simulatieDatum) return ''; if(simulatieDatum<aM){const n=simulatieDatum; let yD=aM.getFullYear()-n.getFullYear();let mD=aM.getMonth()-n.getMonth();if(mD<0){yD--;mD+=12;}return `\n    ↳ Wett. Pensioen${pL} over ${yD}j,${mD}m`;} return `\n    ↳ Wett. Pensioen${pL} loopt`; };
         const projP1 = getRetirementProjection(vals.p1, 0); const projP2 = vals.p2 ? getRetirementProjection(vals.p2, 1) : '';
         let compTitle = "...", compContent = "...";
 
@@ -392,16 +364,16 @@ document.addEventListener('DOMContentLoaded', () => {
 * NL pensioen >€25k/jaar of overheidspensioen wordt in NL belast.`;
         }
 
-        // --- FRANSE BREAKDOWN (met tIV, lijfrente details) ---
+        // --- FRANSE BREAKDOWN ---
         const pfuSocLasten_fr = tIV * (PARAMS.FR.SOCIALE_LASTEN.PFU || 0);
         const beContribAftrek_fr = fr.breakdown.beContribAftrek || 0;
-        const lijfrenteSocLasten_fr = (fr.breakdown.lijfrenteBelastbaar || 0) * (PARAMS.FR.SOCIALE_LASTEN.LIJFRENTE_TARIEF || 0);
+        const lijfrenteSocLasten_fr = fr.breakdown.lijfrenteSocLasten || 0;
         const frSocLastenExclPFUBeLijfrente = (fr.breakdown.socialeLasten || 0) - pfuSocLasten_fr - beContribAftrek_fr - lijfrenteSocLasten_fr;
         const cakAftrek_fr = fr.breakdown.aftrekCak || 0;
-        const pfuTax_fr = tIV * (PARAMS.FR.INKOMSTENBELASTING.PFU_TARIEF || 0);
+        const pfuTax_fr = fr.breakdown.pfuTax || 0;
         const ibTax_fr = (fr.breakdown.tax || 0) - pfuTax_fr;
         const belastingKrediet_fr = fr.breakdown.belastingKrediet || 0;
-        const belastbaarInkomen_fr = (fr.breakdown.brutoInFR || 0) - frSocLastenExclPFUBe - beContribAftrek_fr - cakAftrek_fr - (fr.breakdown.lijfrenteBruto || 0) + (fr.breakdown.lijfrenteBelastbaar || 0); // Approx.
+        const belastbaarInkomen_fr = (fr.breakdown.brutoInFR || 0) - frSocLastenExclPFUBeLijfrente - beContribAftrek_fr - cakAftrek_fr - (fr.breakdown.lijfrenteBruto || 0) + (fr.breakdown.lijfrenteBelastbaar || 0);
 
         return `
 Analyse ${activeComparison}-FR | ${vals.isCouple?'Partners':'Alleenst.'}, Kind:${vals.children||0} | Verm: ${formatCurrency(est)} (${formatCurrency(wf)} fin/${formatCurrency(wp)} vast) ${projP1}${projP2}
@@ -415,8 +387,8 @@ Frankrijk 🇫🇷 ${simDatumStr}
    ↳ Inkomen belast in FR: ${formatCurrency(fr.breakdown.brutoInFR||0)} (Incl. bruto lijfrente: ${formatCurrency(fr.breakdown.lijfrenteBruto||0)})
    ↳ Inkomen belast in Herkomstland*: ${formatCurrency(fr.breakdown.brutoInkomenVoorNLBelasting||0)} (Netto: ${formatCurrency(fr.breakdown.nettoInkomenUitNL||0)})
 2. Sociale Lasten (Totaal): ${formatCurrency(fr.breakdown.socialeLasten||0)}
-   ↳ FR Soc. Lasten (Inkomen excl. lijfrente): -${formatCurrency(frSocLastenExclPFUBe)} (~9% pens, ~22% loon, ~21% winst)
-   ↳ FR Soc. Lasten (Lijfrente belastbaar deel): -${formatCurrency(lijfrenteSocLasten_fr)} (${(PARAMS.FR.SOCIALE_LASTEN.LIJFRENTE_TARIEF*100).toFixed(1)}% op ${formatCurrency(fr.breakdown.lijfrenteBelastbaar||0)})
+   ↳ FR Soc. Lasten (Inkomen): -${formatCurrency(frSocLastenExclPFUBeLijfrente)} (~9% pens, ~22% loon, ~21% winst)
+   ↳ FR Soc. Lasten (Lijfrente belastb. deel): -${formatCurrency(lijfrenteSocLasten_fr)} (${((PARAMS.FR.SOCIALE_LASTEN.LIJFRENTE_TARIEF||0)*100).toFixed(1)}% op ${formatCurrency(fr.breakdown.lijfrenteBelastbaar||0)})
    ↳ FR Soc. Lasten (Vermogen PFU 17.2%): -${formatCurrency(pfuSocLasten_fr)}
    ↳ BE Soc. Lasten (Pensioen RIZIV/Solid.): -${formatCurrency(beContribAftrek_fr)} (Betaald in BE)
    = Subtotaal na SZ: ${formatCurrency(fr.bruto - (fr.breakdown.socialeLasten||0))}
@@ -440,32 +412,6 @@ Frankrijk 🇫🇷 ${simDatumStr}
 * Ovh. pensioen/NL pensioen >€25k bij wonen in BE.
         `;
     }
-
-    // --- Helper for Simulation Date ---
-    function getSimData(vals) {
-        const simYear = inputs.simYear ? parseInt(inputs.simYear.value, 10) : null;
-        const simMonth = inputs.simMonth ? parseInt(inputs.simMonth.value, 10) : null;
-        let simulatieDatum = new Date(); // Default to now
-        if (simYear && simMonth) {
-            simulatieDatum = new Date(simYear, simMonth - 1, 15);
-        }
-
-        const calcAge = (p) => {
-             if (!p?.birthYear || !p?.birthMonth) return null;
-             let ageYears = simulatieDatum.getFullYear() - p.birthYear;
-             let ageMonths = simulatieDatum.getMonth() - (p.birthMonth - 1);
-             if (ageMonths < 0 || (ageMonths === 0 && simulatieDatum.getDate() < 15)) { // Use 15th for comparison consistency
-                 ageYears--;
-             }
-             return ageYears;
-         };
-
-        const simulatieLeeftijdP1 = calcAge(vals.p1);
-        const simulatieLeeftijdP2 = vals.p2 ? calcAge(vals.p2) : null;
-
-        return { simulatieDatum, simulatieLeeftijdP1, simulatieLeeftijdP2 };
-    }
-
 
     // --- Start Applicatie ---
     initializeApp();
