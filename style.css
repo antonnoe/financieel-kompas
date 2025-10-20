@@ -265,3 +265,119 @@ footer {
     #reset-btn { font-size: 1.1em; padding: 12px 30px; }
     .module summary { font-size: 1.1em; }
 }
+
+/* --- Landing Step Styles --- */
+.landing-step {
+    text-align: center;
+    padding: 40px 20px;
+    min-height: 60vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.landing-content {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.landing-content h1 {
+    color: var(--secondary-color);
+    font-size: 2.5em;
+    margin-bottom: 20px;
+}
+
+.landing-intro {
+    font-size: 1.2em;
+    line-height: 1.6;
+    margin-bottom: 40px;
+    color: var(--text-color);
+}
+
+.landing-features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 30px;
+    margin-bottom: 40px;
+}
+
+.feature-item {
+    padding: 20px;
+    background-color: var(--background-color);
+    border-radius: 8px;
+    transition: transform 0.2s;
+}
+
+.feature-item:hover {
+    transform: translateY(-5px);
+}
+
+.feature-icon {
+    font-size: 3em;
+    display: block;
+    margin-bottom: 15px;
+}
+
+.feature-item h3 {
+    color: var(--primary-color);
+    margin: 10px 0;
+    font-size: 1.2em;
+}
+
+.feature-item p {
+    font-size: 0.95em;
+    line-height: 1.5;
+    color: #666;
+}
+
+.landing-cta {
+    margin: 40px 0 30px 0;
+}
+
+.btn-primary {
+    background-color: var(--secondary-color);
+    color: white;
+    border: none;
+    padding: 15px 50px;
+    font-size: 1.2em;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+    font-weight: 600;
+}
+
+.btn-primary:hover {
+    background-color: #a00000;
+    transform: scale(1.05);
+}
+
+.btn-primary:active {
+    transform: scale(0.98);
+}
+
+.landing-disclaimer {
+    font-size: 0.9em;
+    color: #666;
+    margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+    .landing-content h1 {
+        font-size: 2em;
+    }
+    
+    .landing-intro {
+        font-size: 1em;
+    }
+    
+    .landing-features {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .btn-primary {
+        padding: 12px 40px;
+        font-size: 1.1em;
+    }
+}
+
