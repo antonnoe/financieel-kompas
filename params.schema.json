@@ -1,0 +1,231 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://financieel-kompas.example.com/params.schema.json",
+  "title": "Financial Kompas Parameters Schema",
+  "description": "JSON Schema for validating the minimal subset of PARAMS required by core calculation engine functions",
+  "type": "object",
+  "required": ["NL"],
+  "properties": {
+    "NL": {
+      "type": "object",
+      "description": "Netherlands tax parameters",
+      "required": ["BOX1", "SOCIALE_LASTEN"],
+      "properties": {
+        "BOX1": {
+          "type": "object",
+          "description": "Box 1 income tax parameters (work and pension income)",
+          "required": [
+            "TARIEVEN_ONDER_AOW",
+            "TARIEVEN_BOVEN_AOW",
+            "GRENS_SCHIJF_1",
+            "ALGEMENE_HEFFINGSKORTING_MAX",
+            "ARBEIDSKORTING_MAX",
+            "MKB_WINSTVRIJSTELLING",
+            "HK_AFBOUW_START",
+            "HK_AFBOUW_FACTOR"
+          ],
+          "properties": {
+            "TARIEVEN_ONDER_AOW": {
+              "type": "array",
+              "description": "Tax rates for income below state pension age [rate1, rate2]",
+              "items": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "TARIEVEN_BOVEN_AOW": {
+              "type": "array",
+              "description": "Tax rates for income above state pension age [rate1, rate2]",
+              "items": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "GRENS_SCHIJF_1": {
+              "type": "number",
+              "description": "Threshold for first tax bracket in EUR",
+              "minimum": 0
+            },
+            "ALGEMENE_HEFFINGSKORTING_MAX": {
+              "type": "number",
+              "description": "Maximum general tax credit in EUR",
+              "minimum": 0
+            },
+            "ARBEIDSKORTING_MAX": {
+              "type": "number",
+              "description": "Maximum labor tax credit in EUR",
+              "minimum": 0
+            },
+            "MKB_WINSTVRIJSTELLING": {
+              "type": "number",
+              "description": "SME profit exemption percentage",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "HK_AFBOUW_START": {
+              "type": "number",
+              "description": "Income threshold for tax credit phase-out in EUR",
+              "minimum": 0
+            },
+            "HK_AFBOUW_FACTOR": {
+              "type": "number",
+              "description": "Tax credit phase-out factor",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "additionalProperties": true
+        },
+        "SOCIALE_LASTEN": {
+          "type": "object",
+          "description": "Social contributions parameters",
+          "required": ["ZVW_PERCENTAGE"],
+          "properties": {
+            "ZVW_PERCENTAGE": {
+              "type": "number",
+              "description": "Health insurance contribution percentage for self-employed",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "additionalProperties": true
+        },
+        "BOX3": {
+          "type": "object",
+          "description": "Box 3 wealth tax parameters (optional for core engine)",
+          "properties": {
+            "VRIJSTELLING_SINGLE": {
+              "type": "number",
+              "minimum": 0
+            },
+            "VRIJSTELLING_COUPLE": {
+              "type": "number",
+              "minimum": 0
+            },
+            "TARIEF": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "FORFAITAIR_RENDEMENT": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "FR": {
+      "type": "object",
+      "description": "France tax parameters (optional for extended features)",
+      "properties": {
+        "INKOMSTENBELASTING": {
+          "type": "object",
+          "properties": {
+            "SCHIJVEN": {
+              "type": "array",
+              "description": "Progressive tax brackets",
+              "items": {
+                "type": "object",
+                "required": ["grens", "tarief"],
+                "properties": {
+                  "grens": {
+                    "description": "Upper limit of bracket (use string 'Infinity' for highest bracket)",
+                    "oneOf": [
+                      { "type": "number", "minimum": 0 },
+                      { "type": "string", "enum": ["Infinity"] }
+                    ]
+                  },
+                  "tarief": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  }
+                }
+              }
+            },
+            "PFU_TARIEF": {
+              "type": "number",
+              "description": "Flat tax rate on investment income",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "additionalProperties": true
+        },
+        "SOCIALE_LASTEN": {
+          "type": "object",
+          "properties": {
+            "PFU": {
+              "type": "number",
+              "description": "Social contributions on investment income (PFU)",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "additionalProperties": true
+        },
+        "IFI": {
+          "type": "object",
+          "description": "Wealth tax on property (Impôt sur la Fortune Immobilière)",
+          "properties": {
+            "DREMPEL_START": {
+              "type": "number",
+              "description": "Minimum threshold for IFI in EUR",
+              "minimum": 0
+            },
+            "SCHIJVEN": {
+              "type": "array",
+              "description": "Progressive IFI tax brackets",
+              "items": {
+                "type": "object",
+                "required": ["grens", "tarief"],
+                "properties": {
+                  "grens": {
+                    "description": "Upper limit of bracket",
+                    "oneOf": [
+                      { "type": "number", "minimum": 0 },
+                      { "type": "string", "enum": ["Infinity"] }
+                    ]
+                  },
+                  "tarief": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  }
+                }
+              }
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "BE": {
+      "type": "object",
+      "description": "Belgium tax parameters (optional for extended features)",
+      "additionalProperties": true
+    },
+    "AOW_BRUTO_SINGLE": {
+      "type": "number",
+      "description": "Dutch state pension amount for single person",
+      "minimum": 0
+    },
+    "AOW_BRUTO_COUPLE": {
+      "type": "number",
+      "description": "Dutch state pension amount per person in couple",
+      "minimum": 0
+    }
+  },
+  "additionalProperties": true
+}
