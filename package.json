@@ -1,0 +1,36 @@
+{
+  "name": "financieel-kompas",
+  "version": "1.0.0",
+  "description": "Tax comparison calculator for Netherlands, Belgium, and France",
+  "main": "src/engine.js",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "keywords": [
+    "tax",
+    "calculator",
+    "netherlands",
+    "belgium",
+    "france",
+    "finance"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "collectCoverageFrom": [
+      "src/**/*.js"
+    ],
+    "coveragePathIgnorePatterns": [
+      "/node_modules/"
+    ],
+    "testMatch": [
+      "**/test/**/*.test.js"
+    ]
+  }
+}
