@@ -48,8 +48,8 @@
                 <div class="form-group date-group">
                     <label>Scenario per leeftijd (Jaar/Maand) <span class="tooltip" data-text="Vul hier de leeftijd (jaar/maand) in waarvoor u de vergelijking wilt zien, bv. uw geplande emigratieleeftijd. Leeg laten = huidige situatie. Let op: vul bij pensioen/lijfrente de bruto bedragen in die op DÁT moment gelden (meestal lager bij vervroeging)!">(?)</span></label>
                     <div>
-                        <select id="sim-year"><option value="">-- Jaar --</option></select>
-                        <select id="sim-month"><option value="">-- Maand --</option></select>
+                        <select id="sim-year"><option value="">-- Huidig Jaar --</option></select>
+                        <select id="sim-month"><option value="">-- Huidige Maand --</option></select>
                     </div>
                 </div>
             </details>
@@ -72,7 +72,7 @@
                         </div>
                         <div class="form-group" id="group-income-wealth-1"><label>Jaarlijks inkomen uit vermogen <span class="tooltip" data-text="Werkelijk rendement (dividend/rente). NL: Box 3 (bezit). FR/BE: belast op inkomen (met vrijstellingen).">(?)</span>: <span class="slider-value" id="value-income-wealth-1">€ 0</span></label><input type="range" class="slider" id="slider-income-wealth-1" min="0" max="100000" step="1000" value="0"></div>
                         <div class="form-group" id="group-salary-1"><label>Inkomen Loondienst <span class="tooltip" data-text="Bruto jaarinkomen incl. extra's.">(?)</span>: <span class="slider-value" id="value-salary-1">€ 0</span></label><input type="range" class="slider" id="slider-salary-1" min="0" max="250000" step="5000" value="0"></div>
-                        <div class="form-group" id="group-business-1"><label>Winst uit Onderneming <span class="tooltip" data-text="Bruto winst vóór belastingen/sociale bijdragen. De keuzelijst 'Dienst/Verhuur' is alleen relevant voor de Franse berekening (abattement).">(?)</span></label><select id="business-type-1" class="duration-select fr-specific hide-for-be"><option value="services">Dienst/Overig</option><option value="rental">Verhuur Gîte/B&B</option></select><input type="range" class="slider" id="slider-business-1" min="0" max="300000" step="5000" value="0"><span class="slider-value" id="value-business-1">€ 0</span></div>
+                        <div class="form-group" id="group-business-1"><label>Winst uit Onderneming <span class="tooltip" data-text="Bruto winst. De keuzelijst 'Dienst/Verhuur' is alleen relevant voor de Franse berekening (abattement).">(?)</span></label><select id="business-type-1" class="duration-select fr-specific hide-for-be"><option value="services">Dienst/Overig</option><option value="rental">Verhuur Gîte/B&B</option></select><input type="range" class="slider" id="slider-business-1" min="0" max="300000" step="5000" value="0"><span class="slider-value" id="value-business-1">€ 0</span></div>
                     </div>
                      <div class="partner-section" id="partner2-section" style="display: none;">
                         <h3 class="partner-title">Partner 2</h3>
