@@ -14,11 +14,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function getSimulationInfo(vals) {
         const simYear = inputs.simYear ? parseInt(inputs.simYear.value, 10) : null;
         const simMonth = inputs.simMonth ? parseInt(inputs.simMonth.value, 10) : null;
-        let simulatieDatum = new Date();
+        let simulatieDatum = new Date(); // Default to now
         let scenarioIsPastOrPresent = true;
 
         if (simYear && simMonth) {
-            simulatieDatum = new Date(simYear, simMonth - 1, 15);
+            simulatieDatum = new Date(simYear, simMonth - 1, 15); // Use 15th to avoid timezone issues
             scenarioIsPastOrPresent = simulatieDatum <= new Date();
         }
 
@@ -113,6 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const p1Input = getPartnerInput('p1'); if (!p1Input) throw new Error("P1 data invalid.");
             const p2Input = isCouple ? getPartnerInput('p2') : null; if (isCouple && !p2Input) throw new Error("P2 data invalid.");
+            // Bugfix: Zorg dat P1/P2 bestaan, ook als ze leeg zijn, voor getSimulationInfo
             const inputValues = { isCouple, children: Number(inputs.children?.value||0), cak: !!inputs.cak?.checked, homeHelp: Number(inputs.homeHelp?.value||0), wealthFinancial: Number(inputs.wealthFinancial?.value||0), wealthProperty: Number(inputs.wealthProperty?.value||0), p1: p1Input, p2: p2Input };
             inputValues.estate = inputValues.wealthFinancial + inputValues.wealthProperty;
 
@@ -145,16 +146,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         P.forEach((p, index)=>{
             const simulatieLeeftijd = (index === 0) ? simulatieLeeftijdP1 : simulatieLeeftijdP2;
+            if (simulatieLeeftijd === null) return; // Kan niet rekenen zonder leeftijd
+            
             const aDI=getAOWDateInfo(p.birthYear); const aM=new Date((p.birthYear||1900)+aDI.years,(p.birthMonth||1)-1+aDI.months);
-            const isPensioner = simulatieLeeftijd !== null && simulatieDatum >= aM; // Check against sim date
+            const isPensioner = simulatieDatum >= aM; // Check against sim date
             const lDN=p.lijfrenteDuration?Number(p.lijfrenteDuration):999;
             const lijfrenteStartAgeVal = p.lijfrenteStartAge === 'aow' ? (aDI.years + Math.floor(aDI.months / 12)) : parseInt(p.lijfrenteStartAge || '999', 10);
-            const lijfrenteIsActive = simulatieLeeftijd !== null && simulatieLeeftijd >= lijfrenteStartAgeVal && simulatieLeeftijd < lDN;
+            const lijfrenteIsActive = simulatieLeeftijd >= lijfrenteStartAgeVal && simulatieLeeftijd < lDN;
 
             const cP=isPensioner?(p.pensionPublic||0)+(p.pensionPrivate||0):0;
             const cAOW=isPensioner?(Number(p.aowYears||0)/50)*(vals.isCouple?PARAMS.AOW_BRUTO_COUPLE:PARAMS.AOW_BRUTO_SINGLE):0;
             const cL = lijfrenteIsActive ? (p.lijfrente||0) : 0;
-            const isWorking = simulatieLeeftijd !== null && simulatieDatum < aM; // Werkt tot AOW-leeftijd
+            const isWorking = simulatieDatum < aM; // Werkt tot AOW-leeftijd
             const r=calculateNLNetto(cAOW+cP+cL, isWorking ? p.salary||0 : 0, isWorking ? p.business||0 : 0, isPensioner);
             cB+=r.bruto;cT+=r.tax;cN+=r.netto;
         });
@@ -175,13 +178,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         P.forEach((p, index)=>{
             const simulatieLeeftijd = (index === 0) ? simulatieLeeftijdP1 : simulatieLeeftijdP2;
+            if (simulatieLeeftijd === null) return;
             const aDI=getAOWDateInfo(p.birthYear); const aM=new Date((p.birthYear||1900)+aDI.years,(p.birthMonth||1)-1+aDI.months);
-            const isPensioner = simulatieLeeftijd !== null && simulatieDatum >= aM;
-            const isWorking = simulatieLeeftijd !== null && simulatieDatum < aM;
+            const isPensioner = simulatieDatum >= aM; const isWorking = simulatieDatum < aM;
             if(isPensioner) iPH = true;
             const lDN=p.lijfrenteDuration?Number(p.lijfrenteDuration):999;
             const lijfrenteStartAgeVal = p.lijfrenteStartAge === 'aow' ? (aDI.years + Math.floor(aDI.months / 12)) : parseInt(p.lijfrenteStartAge || '999', 10);
-            const lijfrenteIsActive = simulatieLeeftijd !== null && simulatieLeeftijd >= lijfrenteStartAgeVal && simulatieLeeftijd < lDN;
+            const lijfrenteIsActive = simulatieLeeftijd >= lijfrenteStartAgeVal && simulatieLeeftijd < lDN;
 
             const countryYears = (currentComparison === 'NL') ? Number(p.aowYears||0) : Number(p.beWorkYears||0);
             tEY += countryYears + Number(p.frWorkYears||0);
@@ -192,11 +195,11 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const currentLijfrente = lijfrenteIsActive ? (p.lijfrente||0) : 0;
             totalLijfrenteBruto += currentLijfrente;
-            if (currentLijfrente > 0 && simulatieLeeftijd !== null) {
-                let belastbareFractie = 1.0; // Default 100% (als < 50)
+            if (currentLijfrente > 0) {
+                let belastbareFractie = 1.0; // Default 100%
                 for (const frac of (PARAMS.FR.INKOMSTENBELASTING.LIJFRENTE_FRACTIES||[])) {
-                    if (simulatieLeeftijd < frac.age) { belastbareFractie = frac.fraction; break; }
-                    belastbareFractie = frac.fraction; // Blijf updaten tot de laatste (>=70)
+                    if (lijfrenteStartAgeVal < frac.age) { belastbareFractie = frac.fraction; break; } // Check startleeftijd
+                    belastbareFractie = frac.fraction; 
                 }
                 const lijfrenteBelastbaarDeel = currentLijfrente * belastbareFractie;
                 totalLijfrenteBelastbaar += lijfrenteBelastbaarDeel;
@@ -251,15 +254,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         P.forEach((p, index) => {
             const simulatieLeeftijd = (index === 0) ? simulatieLeeftijdP1 : simulatieLeeftijdP2;
+            if (simulatieLeeftijd === null) return;
             const s=p.salary||0, b=p.business||0; const pP=p.pensionPublic||0, pPr=p.pensionPrivate||0;
             const l=p.lijfrente||0, iW=p.incomeWealth||0; const aY=p.aowYears||0; const beP=p.bePension||0;
 
             const aDI=getAOWDateInfo(p.birthYear); const aM=new Date((p.birthYear||1900)+aDI.years,(p.birthMonth||1)-1+aDI.months);
-            const isPensioner = simulatieLeeftijd !== null && simulatieDatum >= aM;
-            const isWorking = simulatieLeeftijd !== null && simulatieDatum < aM;
+            const isPensioner = simulatieDatum >= aM; const isWorking = simulatieDatum < aM;
             const lDN=p.lijfrenteDuration?Number(p.lijfrenteDuration):999;
             const lijfrenteStartAgeVal = p.lijfrenteStartAge === 'aow' ? (aDI.years + Math.floor(aDI.months / 12)) : parseInt(p.lijfrenteStartAge || '999', 10);
-            const lijfrenteIsActive = simulatieLeeftijd !== null && simulatieLeeftijd >= lijfrenteStartAgeVal && simulatieLeeftijd < lDN;
+            const lijfrenteIsActive = simulatieLeeftijd >= lijfrenteStartAgeVal && simulatieLeeftijd < lDN;
 
             const loon = isWorking ? s : 0; const winst = isWorking ? b : 0;
             const rW=loon*(PB.SOCIALE_LASTEN.WERKNEMER_RSZ_PERCENTAGE||0); const nettoLoonVoorKosten=loon-rW; tSL+=rW; tBI_voor_kosten+=nettoLoonVoorKosten;
@@ -270,7 +273,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const cAOW=isPensioner?(aY/50)*(vals.isCouple?PARAMS.AOW_BRUTO_COUPLE:PARAMS.AOW_BRUTO_SINGLE):0; const cABP=isPensioner?pP:0; const cP=isPensioner?pPr:0; const cL=lijfrenteIsActive?l:0;
             const cBEP = isPensioner ? beP : 0; brutoBePension += cBEP;
             if(cABP>0){nPNLB+=cABP;} const tOP=cAOW+cP+cL;
-            // Alle NL particuliere pensioenen/lijfrentes (niet-overheid) tellen mee in BE belastbare basis
+            // Verwijderde <25k regel: Alle NL part. pensioenen/lijfrentes in BE belastbaar (voor BE scenario)
             tBI_voor_kosten+=tOP;
             tB+=cABP+tOP+cBEP; tIV+=iW;
         });
@@ -361,15 +364,14 @@ document.addEventListener('DOMContentLoaded', () => {
 6. Netto Inkomen: ${formatCurrency(compare.netto)}
 
 7. Vermogen: Aanslag: ${formatCurrency(compare.wealthTax)} (Geen alg. vermogensbelasting)
-* NL pensioen >€25k/jaar of overheidspensioen wordt in NL belast.`;
+* NL overheidspensioen wordt in NL belast. Particulier NL pensioen/lijfrente in BE.`; // Vereenvoudigde <25k regel
             }
 
             // --- FRANSE BREAKDOWN (FIXED) ---
-            // Haal de benodigde waarden uit het 'fr.breakdown' object
             const pfuSocLasten_fr = fr.breakdown.pfuSocLasten || 0;
             const beContribAftrek_fr = fr.breakdown.beContribAftrek || 0;
             const lijfrenteSocLasten_fr = fr.breakdown.lijfrenteSocLasten || 0;
-            const frSocLastenExclPFUBeLijfrente = fr.breakdown.frSocLastenInkomen || 0; // Dit was de fout
+            const frSocLastenExclPFUBeLijfrente = fr.breakdown.frSocLastenInkomen || 0; // Dit was de fout, nu correct gelezen
             const cakAftrek_fr = fr.breakdown.aftrekCak || 0;
             const pfuTax_fr = fr.breakdown.pfuTax || 0;
             const ibTax_fr = (fr.breakdown.tax || 0) - pfuTax_fr;
@@ -410,14 +412,13 @@ Frankrijk 🇫🇷 ${simDatumStr}
 7. Vermogen (IFI):
    - Vastgoed: ${formatCurrency(wp)} (> €1.3M belast, excl. hoofd)
    ↳ Aanslag: ${formatCurrency(fr.wealthTax)}
-* Ovh. pensioen/NL pensioen >€25k bij wonen in BE (regel uit NL-BE verdrag, kan afwijken voor FR).
+* Ovh. pensioen wordt in herkomstland belast.
         `;
         } catch (error) {
             console.error("Fout in generateBreakdown:", error);
             return `Fout bij genereren analyse: ${error.message}`;
         }
     }
-
 
     // --- Start Applicatie ---
     initializeApp();
