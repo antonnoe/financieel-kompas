@@ -17,10 +17,6 @@ html, body {
   overflow-y: auto;   /* Sta verticale scroll toe */
   height: 100%; /* Nodig voor context */
 }
-.container {
-  overflow: visible; /* Zorg dat container sticky niet 'afknipt' */
-  min-height: 100%;
-}
 /* EINDE FIX */
 
 body {
@@ -38,6 +34,8 @@ body {
     padding: 20px 30px;
     border-radius: 12px;
     box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+    overflow: visible; /* Zorg dat container sticky niet 'afknipt' */
+    min-height: 100%;
 }
 
 header { text-align: center; border-bottom: 2px solid var(--border-color); padding-bottom: 15px; margin-bottom: 25px; }
@@ -59,19 +57,19 @@ header h1 { color: var(--secondary-color); margin: 0; }
     flex-wrap: wrap;
     gap: 15px;
     margin-bottom: 20px;
-    background-color: rgba(255, 255, 255, 0.98);
-    backdrop-filter: blur(5px);
+    background-color: rgba(255, 255, 255, 0.98); /* Minder transparant */
+    backdrop-filter: blur(5px); /* Minder blur */
     padding: 10px 15px;
-    border-radius: 0 0 10px 10px;
+    border-radius: 0 0 10px 10px; /* Alleen afronding onderaan */
     border: 1px solid var(--border-color);
-    border-top: none;
+    border-top: none; /* Geen rand bovenaan als het plakt */
     box-shadow: 0 4px 10px rgba(0,0,0,0.05);
 }
 
 .country-result { flex: 1; min-width: 240px; }
 .country-result h2 {
-    margin: 0 0 5px 0;
-    font-size: 1em;
+    margin: 0 0 5px 0; /* Gereduceerde marge */
+    font-size: 1em; /* Iets kleiner */
     color: var(--primary-color);
     border-bottom: 1px solid;
     padding-bottom: 5px;
@@ -88,7 +86,11 @@ header h1 { color: var(--secondary-color); margin: 0; }
 
 .result-metric { margin-bottom: 8px; }
 .result-metric label { display: block; font-size: 0.75em; color: #666; margin-bottom: 2px; }
-.result-value { font-size: 1.2em; font-weight: bold; color: var(--text-color); }
+.result-value {
+    font-size: 1.2em; /* Iets kleiner */
+    font-weight: bold;
+    color: var(--text-color);
+}
 .explanation-text { font-size: 0.75em; color: #555; font-style: italic; }
 
 .conclusion-integrated {
@@ -96,7 +98,11 @@ header h1 { color: var(--secondary-color); margin: 0; }
     margin-top: 10px; border-top: 1px dashed var(--border-color);
 }
 .conclusion-integrated h3 { margin: 0 0 3px 0; font-size: 1em; font-weight: bold; }
-.conclusion-integrated p { font-size: 1.5em; font-weight: bold; margin: 3px 0; }
+.conclusion-integrated p {
+    font-size: 1.5em; /* Iets kleiner */
+    font-weight: bold;
+    margin: 3px 0;
+}
 .conclusion-integrated em { font-size: 0.8em; }
 .conclusion-integrated.positive p { color: var(--success-border); }
 .conclusion-integrated.negative p { color: var(--danger-border); }
@@ -183,33 +189,45 @@ select { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 5px;
 }
 .tooltip:hover::after { opacity: 1; visibility: visible; }
 
-/* --- Nieuwe optionele velden --- */
-.optional-setting details {
-    margin-top: 10px; background-color: #f9f9f9;
-    border: 1px dashed #ccc; border-radius: 5px;
+/* --- Optionele velden (Scenario Leeftijd, Lijfrente Start) --- */
+.optional-setting {
+    border: 1px dashed #ccc; border-radius: 8px; margin-bottom: 20px;
 }
 .optional-setting summary {
-    font-weight: normal; font-size: 0.9em; padding: 5px 10px;
-    color: #555;
+    font-weight: bold; font-size: 1.0em; padding: 10px 20px;
+    color: var(--primary-color); cursor: pointer;
 }
-.optional-setting .form-group {
-    padding: 10px; margin-bottom: 0; background-color: #f9f9f9;
+.optional-setting .date-group, .optional-setting .form-group {
+    padding: 0 20px 15px 20px; margin-bottom: 0;
+    background-color: #fdfdfd;
 }
 .optional-setting label {
     font-size: 0.9em; margin-bottom: 5px;
 }
 .optional-setting .date-group div {
-    display: flex; gap: 5px; /* Kleinere gap */
+    display: flex; gap: 5px;
 }
 .optional-setting .date-group select {
-    padding: 8px; /* Compactere select */
+    padding: 8px;
 }
 .optional-setting .form-group .duration-select { /* Hergebruik voor lijfrente start */
     width: 100%;
     padding: 8px;
-    margin-top: 0; /* Geen extra marge */
+    margin-top: 0;
 }
-
+/* Optionele setting binnen een partner-section */
+.partner-section .optional-setting {
+     margin: 10px 0 0 0; background-color: #f9f9ff;
+}
+.partner-section .optional-setting summary {
+    font-size: 0.9em; padding: 5px 10px;
+}
+.partner-section .optional-setting .form-group {
+     padding: 10px; background-color: #f9f9ff;
+}
+.partner-section .optional-setting label {
+    font-size: 0.9em;
+}
 
 /* --- Buttons --- */
 #actions { text-align: center; margin: 30px 0; }
