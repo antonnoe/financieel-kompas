@@ -9,31 +9,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Hulpfuncties ---
     function displayError(message) { console.error(message); const el=getEl('calculation-breakdown'); if(el) el.textContent=message; else document.body.innerHTML=`<p style="color:red;padding:20px;">${message}</p>`; }
-    function checkSelectors() { if(!comparisonChoice||!householdType||!inputs||!outputs||!valueOutputs||!outputs.breakdown||!inputs.p1?.birthYear||!inputs.children||!outputs.compareBruto||!valueOutputs.p1?.aowYears||!inputs.simYear){ console.error("UI elements missing."); return false; } return true; } // Added simYear check
+    function checkSelectors() { if(!comparisonChoice||!householdType||!inputs||!outputs||!valueOutputs||!outputs.breakdown||!inputs.p1?.birthYear||!inputs.children||!outputs.compareBruto||!valueOutputs.p1?.aowYears||!inputs.simYear){ console.error("UI elements missing."); return false; } return true; }
 
-    // Functie om simulatie datum/leeftijd te krijgen
     function getSimulationInfo(vals) {
         const simYear = inputs.simYear ? parseInt(inputs.simYear.value, 10) : null;
         const simMonth = inputs.simMonth ? parseInt(inputs.simMonth.value, 10) : null;
-        let simulatieDatum = new Date(); // Default to now
+        let simulatieDatum = new Date();
         let scenarioIsPastOrPresent = true;
 
         if (simYear && simMonth) {
-            simulatieDatum = new Date(simYear, simMonth - 1, 15); // Use 15th to avoid timezone issues
-            scenarioIsPastOrPresent = simulatieDatum <= new Date(); // Check if scenario is in past/present
+            simulatieDatum = new Date(simYear, simMonth - 1, 15);
+            scenarioIsPastOrPresent = simulatieDatum <= new Date();
         }
 
         const calcAge = (p) => {
              if (!p?.birthYear || !p?.birthMonth) return null;
-             // Calculate age at the simulation date
              let ageYears = simulatieDatum.getFullYear() - p.birthYear;
              let ageMonths = simulatieDatum.getMonth() - (p.birthMonth - 1);
-             if (ageMonths < 0 || (ageMonths === 0 && simulatieDatum.getDate() < 15)) { // Use 15th for comparison consistency
-                 ageYears--;
-             }
-             return ageYears; // Use whole years for age checks
+             if (ageMonths < 0 || (ageMonths === 0 && simulatieDatum.getDate() < 15)) { ageYears--; }
+             return ageYears;
          };
-
         const simulatieLeeftijdP1 = calcAge(vals.p1);
         const simulatieLeeftijdP2 = vals.p2 ? calcAge(vals.p2) : null;
 
@@ -43,17 +38,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Initialisatie ---
     async function initializeApp() {
-        console.log("Initializing application...");
+        console.log("Initializing...");
         try { // 1. Load Config
-            const response = await fetch('./config.json'); 
-            if (!response.ok) { throw new Error(`Kon config.json niet laden. Status: ${response.status}.`); }
-            PARAMS = await response.json(); console.log("Config loaded successfully.");
-            // Fix Infinity strings
+            const response = await fetch('./config.json'); if (!response.ok) throw new Error(`Config load failed: ${response.status}`);
+            PARAMS = await response.json(); console.log("Config loaded.");
             const fixInf = (arr) => arr?.forEach(item => { if (item.grens === "Infinity") item.grens = Infinity; });
             fixInf(PARAMS?.FR?.INKOMSTENBELASTING?.SCHIJVEN); fixInf(PARAMS?.FR?.IFI?.SCHIJVEN); fixInf(PARAMS?.BE?.INKOMSTENBELASTING?.SCHIJVEN_2025); fixInf(PARAMS?.BE?.SOCIALE_LASTEN?.BIJZONDERE_BIJDRAGE_SCHIJVEN_GEZIN_2024);
-             // Lijfrente fracties en tarief
             PARAMS.FR.INKOMSTENBELASTING.LIJFRENTE_FRACTIES = [ { age: 50, fraction: 0.7 }, { age: 60, fraction: 0.5 }, { age: 70, fraction: 0.4 }, { age: Infinity, fraction: 0.3 } ];
-             PARAMS.FR.SOCIALE_LASTEN.LIJFRENTE_TARIEF = 0.091; // Aanname
+            PARAMS.FR.SOCIALE_LASTEN.LIJFRENTE_TARIEF = 0.091; // Aanname
         } catch (error) { displayError(`Fout laden config: ${error.message}.`); return; }
 
         // 2. Select DOM Elements
@@ -61,10 +53,10 @@ document.addEventListener('DOMContentLoaded', () => {
         comparisonChoice={nl:getEl('btn-nl'),be:getEl('btn-be')}; compareCountryResult=getEl('compare-country-result'); compareCountryLabel=getEl('compare-country-label'); compareCountryFlag=getEl('compare-country-flag');
         householdType={single:getEl('btn-single'),couple:getEl('btn-couple')}; partner2Section=getEl('partner2-section');
         inputs = {
-            simYear: getEl('sim-year'), simMonth: getEl('sim-month'), // Nieuw
+            simYear: getEl('sim-year'), simMonth: getEl('sim-month'),
             children: getEl('slider-children'), cak: getEl('cak-contribution'), homeHelp: getEl('home-help'), wealthFinancial: getEl('slider-wealth-financial'), wealthProperty: getEl('slider-wealth-property'),
-            p1: { birthYear: getEl('birth-year-1'), birthMonth: getEl('birth-month-1'), aowYears: getEl('aow-years-1'), beWorkYears: getEl('be-work-years-1'), frWorkYears: getEl('fr-work-years-1'), bePension: getEl('slider-be-pension-1'), pensionPublic: getEl('slider-pension-public-1'), pensionPrivate: getEl('slider-pension-private-1'), lijfrente: getEl('slider-lijfrente-1'), lijfrenteDuration: getEl('lijfrente-duration-1'), lijfrenteStartAge: getEl('lijfrente-start-1'), incomeWealth: getEl('slider-income-wealth-1'), salary: getEl('slider-salary-1'), business: getEl('slider-business-1'), businessType: getEl('business-type-1') }, // Added lijfrenteStartAge
-            p2: { birthYear: getEl('birth-year-2'), birthMonth: getEl('birth-month-2'), aowYears: getEl('aow-years-2'), beWorkYears: getEl('be-work-years-2'), frWorkYears: getEl('fr-work-years-2'), bePension: getEl('slider-be-pension-2'), pensionPublic: getEl('slider-pension-public-2'), pensionPrivate: getEl('slider-pension-private-2'), lijfrente: getEl('slider-lijfrente-2'), lijfrenteDuration: getEl('lijfrente-duration-2'), lijfrenteStartAge: getEl('lijfrente-start-2'), incomeWealth: getEl('slider-income-wealth-2'), salary: getEl('slider-salary-2'), business: getEl('slider-business-2'), businessType: getEl('business-type-2') },}; // Added lijfrenteStartAge
+            p1: { birthYear: getEl('birth-year-1'), birthMonth: getEl('birth-month-1'), aowYears: getEl('aow-years-1'), beWorkYears: getEl('be-work-years-1'), frWorkYears: getEl('fr-work-years-1'), bePension: getEl('slider-be-pension-1'), pensionPublic: getEl('slider-pension-public-1'), pensionPrivate: getEl('slider-pension-private-1'), lijfrente: getEl('slider-lijfrente-1'), lijfrenteDuration: getEl('lijfrente-duration-1'), lijfrenteStartAge: getEl('lijfrente-start-1'), incomeWealth: getEl('slider-income-wealth-1'), salary: getEl('slider-salary-1'), business: getEl('slider-business-1'), businessType: getEl('business-type-1') },
+            p2: { birthYear: getEl('birth-year-2'), birthMonth: getEl('birth-month-2'), aowYears: getEl('aow-years-2'), beWorkYears: getEl('be-work-years-2'), frWorkYears: getEl('fr-work-years-2'), bePension: getEl('slider-be-pension-2'), pensionPublic: getEl('slider-pension-public-2'), pensionPrivate: getEl('slider-pension-private-2'), lijfrente: getEl('slider-lijfrente-2'), lijfrenteDuration: getEl('lijfrente-duration-2'), lijfrenteStartAge: getEl('lijfrente-start-2'), incomeWealth: getEl('slider-income-wealth-2'), salary: getEl('slider-salary-2'), business: getEl('slider-business-2'), businessType: getEl('business-type-2') },};
         outputs = { compareBruto: getEl('compare-bruto'), compareTax: getEl('compare-tax'), compareNetto: getEl('compare-netto'), wealthTaxCompare: getEl('wealth-tax-compare'), frBruto: getEl('fr-bruto'), frTax: getEl('fr-tax'), frNetto: getEl('fr-netto'), wealthTaxFr: getEl('wealth-tax-fr'), wealthTaxFrExpl: getEl('wealth-tax-fr-expl'), conclusionBar: getEl('conclusion-bar'), conclusionValue: getEl('conclusion-value'), conclusionExpl: getEl('conclusion-expl'), estateTotalDisplay: getEl('estate-total-display'), breakdown: getEl('calculation-breakdown'),};
         valueOutputs = { p1: { aowYears: getEl('value-aow-years-1'), beWorkYears: getEl('value-be-work-years-1'), frWorkYears: getEl('value-fr-work-years-1'), bePension: getEl('value-be-pension-1'), pensionPublic: getEl('value-pension-public-1'), pensionPrivate: getEl('value-pension-private-1'), lijfrente: getEl('value-lijfrente-1'), incomeWealth: getEl('value-income-wealth-1'), salary: getEl('value-salary-1'), business: getEl('value-business-1') }, p2: { aowYears: getEl('value-aow-years-2'), beWorkYears: getEl('value-be-work-years-2'), frWorkYears: getEl('value-fr-work-years-2'), bePension: getEl('value-be-pension-2'), pensionPublic: getEl('value-pension-public-2'), pensionPrivate: getEl('value-pension-private-2'), lijfrente: getEl('value-lijfrente-2'), incomeWealth: getEl('value-income-wealth-2'), salary: getEl('value-salary-2'), business: getEl('value-business-2') }, children: getEl('value-children'), wealthFinancial: getEl('value-wealth-financial'), wealthProperty: getEl('value-wealth-property'),};
         pensionLabels = document.querySelectorAll('.country-origin');
@@ -74,29 +66,16 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("DOM elements selected.");
 
         // 4. Setup
-        populateDateDropdowns(); populateSimDateDropdowns(); // Nieuw
+        populateDateDropdowns(); populateSimDateDropdowns();
         setupListeners();
-        updateHouseholdType(false); // Stelt in en roept updateScenario aan
-        updateComparisonCountry('NL'); // Stelt in en roept updateScenario aan
-        console.log("Application initialized successfully.");
+        updateHouseholdType(false); updateComparisonCountry('NL');
+        console.log("Application initialized.");
     }
 
     // --- Core Functions ---
     const formatCurrency = (amount, withSign = false) => { const s=amount>0?'+':amount<0?'−':''; const r=Math.round(Math.abs(amount||0)); return `${withSign?s+' ':''}€ ${r.toLocaleString('nl-NL')}`; };
     function populateDateDropdowns() { if(!inputs?.p1?.birthYear||!inputs?.p2?.birthYear)return; const cY=new Date().getFullYear();const M=["Jan","Feb","Mrt","Apr","Mei","Jun","Jul","Aug","Sep","Okt","Nov","Dec"]; [inputs.p1,inputs.p2].forEach(p=>{if(!p||!p.birthYear||!p.birthMonth)return; const yS=p.birthYear,mS=p.birthMonth;if(yS.options.length>0)return; yS.innerHTML='';mS.innerHTML=''; for(let y=cY-18;y>=1940;y--){const o=new Option(y,y);if(y===1960)o.selected=true; yS.add(o);} M.forEach((m,i)=>mS.add(new Option(m,i+1)));}); }
-    function populateSimDateDropdowns() {
-         if (!inputs.simYear || !inputs.simMonth) return;
-         const currentYear = new Date().getFullYear();
-         const simYearSelect = inputs.simYear;
-         const simMonthSelect = inputs.simMonth;
-         simYearSelect.innerHTML = '<option value="">-- Huidig Jaar --</option>'; // Default option
-         simMonthSelect.innerHTML = '<option value="">-- Huidige Maand --</option>'; // Default option
-         for (let year = currentYear + 20; year >= currentYear - 10; year--) {
-             simYearSelect.add(new Option(year, year));
-         }
-         const months = ["Jan", "Feb", "Mrt", "Apr", "Mei", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dec"];
-         months.forEach((month, index) => simMonthSelect.add(new Option(month, index + 1)));
-    }
+    function populateSimDateDropdowns() { if (!inputs.simYear || !inputs.simMonth) return; const cY=new Date().getFullYear(); const sY=inputs.simYear,sM=inputs.simMonth; sY.innerHTML='<option value="">-- Huidig Jaar --</option>'; sM.innerHTML='<option value="">-- Huidige Maand --</option>'; for (let y=cY+20;y>=cY-10;y--){sY.add(new Option(y,y));} const M=["Jan","Feb","Mrt","Apr","Mei","Jun","Jul","Aug","Sep","Okt","Nov","Dec"]; M.forEach((m,i)=>sM.add(new Option(m,i+1))); }
     function getAOWDateInfo(birthYear) { const yr=Number(birthYear); if(!yr||yr<1940)return{years:67,months:0}; if(yr<=1957)return{years:66,months:4}; if(yr===1958)return{years:66,months:7}; if(yr===1959)return{years:66,months:10}; return{years:67,months:0}; }
     function setupListeners() { if(!comparisonChoice||!householdType)return; if(comparisonChoice.nl)comparisonChoice.nl.addEventListener('click',()=>updateComparisonCountry('NL')); if(comparisonChoice.be)comparisonChoice.be.addEventListener('click',()=>updateComparisonCountry('BE')); if(householdType.single)householdType.single.addEventListener('click',()=>updateHouseholdType(false)); if(householdType.couple)householdType.couple.addEventListener('click',()=>updateHouseholdType(true)); const rb=getEl('reset-btn'); if(rb){rb.addEventListener('click',()=>{if(!inputs?.p1?.birthYear)return; document.querySelectorAll('input[type=range]').forEach(i=>{if(i)i.value=0;}); document.querySelectorAll('input[type=checkbox]').forEach(i=>{if(i)i.checked=false;}); document.querySelectorAll('select:not([id*="birth"])').forEach(s=>{if(s)s.selectedIndex=0;}); if(inputs.p1.birthYear)inputs.p1.birthYear.value=1960; if(inputs.p2.birthYear)inputs.p2.birthYear.value=1960; if(inputs.simYear)inputs.simYear.value=""; if(inputs.simMonth)inputs.simMonth.value=""; initialLoad=true; updateHouseholdType(false);updateComparisonCountry('NL');});} const cb=getEl('copy-btn'); if(cb){cb.addEventListener('click',()=>{const txt=outputs?.breakdown?.textContent||''; if(txt&&!txt.includes("Welkom")){navigator.clipboard.writeText(txt).then(()=>{cb.textContent='Gekopieerd!';setTimeout(()=>{cb.textContent='📋 Kopieer Analyse';},2000);}).catch(err=>{console.error('Kopieerfout:',err);alert('Kopiëren mislukt.');});}else{alert("Genereer analyse.");}}); } const ic=getEl('input-panel'); if(ic){ic.addEventListener('input',(e)=>{if(e.target.matches('input, select')){if(e.target.id.includes('aow-years')||e.target.id.includes('fr-work-years')||e.target.id.includes('be-work-years')){adjustWorkYears(e.target.id);}updateScenario();}});}else{console.error("#input-panel missing!");} }
     function toggleCountrySpecificFields(countryCode) {
@@ -185,10 +164,10 @@ document.addEventListener('DOMContentLoaded', () => {
      function calculateNLNetto(pI, s, b, iA) { if(!PARAMS.NL)return{bruto:0,tax:0,netto:0}; const wNV=b*(1-(PARAMS.NL.BOX1.MKB_WINSTVRIJSTELLING||0)); const zB=b>0?wNV:0; const z=zB*(PARAMS.NL.SOCIALE_LASTEN.ZVW_PERCENTAGE||0); const br=pI+s+wNV; if(br<=0&&z<=0)return{bruto:0,tax:0,netto:0}; if(br<=0&&z>0)return{bruto:0,tax:z,netto:-z}; let t=0; const T=iA?PARAMS.NL.BOX1.TARIEVEN_BOVEN_AOW:PARAMS.NL.BOX1.TARIEVEN_ONDER_AOW; const gS1=PARAMS.NL.BOX1.GRENS_SCHIJF_1||Infinity; if(br<=gS1){t=br*T[0];}else{t=(gS1*T[0])+((br-gS1)*T[1]);} let aK=(s>0||b>0?(PARAMS.NL.BOX1.ARBEIDSKORTING_MAX||0):0); let alK=PARAMS.NL.BOX1.ALGEMENE_HEFFINGSKORTING_MAX||0; const hAS=PARAMS.NL.BOX1.HK_AFBOUW_START||0; if(br>hAS){alK=Math.max(0,alK-((br-hAS)*(PARAMS.NL.BOX1.HK_AFBOUW_FACTOR||0)));} if(br>=gS1){alK=0;} const akAS=39957; if(br>akAS){aK=Math.max(0,aK-((br-akAS)*0.0651));} t=t-alK-aK; t=Math.max(0,t); const tT=t+z; return {bruto:br, tax:tT, netto:br-tT}; }
 
     // --- FRANKRIJK ---
-    function calculateFrance(vals, currentComparison) { // Added currentComparison
+    function calculateFrance(vals, currentComparison) {
         if (!PARAMS.FR || !PARAMS.NL || !PARAMS.BE) return { bruto: 0, tax: 0, netto: 0, wealthTax: 0, breakdown: {} };
         let bINLB=0, tA=0, tPP=0, tLo=0, tW=0, iPH=false;
-        let tBFA={services:0, rental:0}; let tEY=0; // Total EU Years
+        let tBFA={services:0, rental:0}; let tEY=0;
         let totalBePension = 0, totalBePensionContributions = 0;
         let totalLijfrenteBruto = 0, totalLijfrenteBelastbaar = 0, lijfrenteSocLasten = 0;
         const P=[vals.p1, vals.p2].filter(p=>p);
@@ -214,10 +193,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const currentLijfrente = lijfrenteIsActive ? (p.lijfrente||0) : 0;
             totalLijfrenteBruto += currentLijfrente;
             if (currentLijfrente > 0 && simulatieLeeftijd !== null) {
-                let belastbareFractie = 1.0; // Default 100%
+                let belastbareFractie = 1.0; // Default 100% (als < 50)
                 for (const frac of (PARAMS.FR.INKOMSTENBELASTING.LIJFRENTE_FRACTIES||[])) {
                     if (simulatieLeeftijd < frac.age) { belastbareFractie = frac.fraction; break; }
-                    belastbareFractie = frac.fraction; // Keep updating to last one if older
+                    belastbareFractie = frac.fraction; // Blijf updaten tot de laatste (>=70)
                 }
                 const lijfrenteBelastbaarDeel = currentLijfrente * belastbareFractie;
                 totalLijfrenteBelastbaar += lijfrenteBelastbaarDeel;
@@ -265,7 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function calculateBelgium(vals) {
         if (!PARAMS.BE || !PARAMS.NL) return { bruto: 0, tax: 0, netto: 0, wealthTax: 0, breakdown: {} };
         let tB=0, tBI_voor_kosten=0, tSL=0, tIV=0, tRV=0, nPNLB=0;
-        let brutoBePension=0, bePensionContrib=0, tLoonInkomenVoorKosten=0;
+        let brutoBePension=0, bePensionContrib=0;
         let p1LoonVoorKosten = 0, p2LoonVoorKosten = 0;
         const P=[vals.p1, vals.p2].filter(p=>p); const PB=PARAMS.BE;
         const { simulatieDatum, simulatieLeeftijdP1, simulatieLeeftijdP2 } = getSimulationInfo(vals);
@@ -283,17 +262,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const lijfrenteIsActive = simulatieLeeftijd !== null && simulatieLeeftijd >= lijfrenteStartAgeVal && simulatieLeeftijd < lDN;
 
             const loon = isWorking ? s : 0; const winst = isWorking ? b : 0;
-            const rW=loon*(PB.SOCIALE_LASTEN.WERKNEMER_RSZ_PERCENTAGE||0); const nettoLoonVoorKosten=loon-rW; tSL+=rW; tBI_voor_kosten+=nettoLoonVoorKosten; tLoonInkomenVoorKosten+=nettoLoonVoorKosten; tB+=loon;
+            const rW=loon*(PB.SOCIALE_LASTEN.WERKNEMER_RSZ_PERCENTAGE||0); const nettoLoonVoorKosten=loon-rW; tSL+=rW; tBI_voor_kosten+=nettoLoonVoorKosten;
             if (index === 0) p1LoonVoorKosten = nettoLoonVoorKosten; else p2LoonVoorKosten = nettoLoonVoorKosten;
-            let rZ=0; if(winst>0){let iR=winst,vG=0; (PB.SOCIALE_LASTEN.ZELFSTANDIGE_SCHIJVEN||[]).forEach(sch=>{const cG=Number(sch.grens);let bIS=Math.max(0,Math.min(iR,cG-vG));rZ+=bIS*sch.tarief;iR-=bIS;vG=cG;});} const nettoWinstVoorKosten=winst-rZ; tSL+=rZ; tBI_voor_kosten+=nettoWinstVoorKosten; tB+=winst;
+            let rZ=0; if(winst>0){let iR=winst,vG=0; (PB.SOCIALE_LASTEN.ZELFSTANDIGE_SCHIJVEN||[]).forEach(sch=>{const cG=Number(sch.grens);let bIS=Math.max(0,Math.min(iR,cG-vG));rZ+=bIS*sch.tarief;iR-=bIS;vG=cG;});} const nettoWinstVoorKosten=winst-rZ; tSL+=rZ; tBI_voor_kosten+=nettoWinstVoorKosten;
+            tB+=loon+winst;
 
             const cAOW=isPensioner?(aY/50)*(vals.isCouple?PARAMS.AOW_BRUTO_COUPLE:PARAMS.AOW_BRUTO_SINGLE):0; const cABP=isPensioner?pP:0; const cP=isPensioner?pPr:0; const cL=lijfrenteIsActive?l:0;
             const cBEP = isPensioner ? beP : 0; brutoBePension += cBEP;
-            // Overheidspensioen (NL/BE) apart houden voor NL belastingheffing
-            if(cABP>0){nPNLB+=cABP;}
-            // Overig NL pensioen (<25k) gaat mee in BE belastbaar inkomen
-            const tOP=cAOW+cP+cL;
-            // VERWIJDERD: <25k regel. Alle NL particuliere pensioenen/lijfrentes worden nu in BE belastbaar geacht (voor BE scenario)
+            if(cABP>0){nPNLB+=cABP;} const tOP=cAOW+cP+cL;
+            // Alle NL particuliere pensioenen/lijfrentes (niet-overheid) tellen mee in BE belastbare basis
             tBI_voor_kosten+=tOP;
             tB+=cABP+tOP+cBEP; tIV+=iW;
         });
@@ -304,7 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const nettoBePension = brutoBePension - bePensionContrib;
 
         const nlTR=PARAMS.NL?.BOX1?.TARIEVEN_BOVEN_AOW?.[0]||0; const nINL=nPNLB*(1-nlTR);
-        tB+=nPNLB+tIV; // Final Total Gross = Loon+Winst+AllePensioenen(Bruto)+VermogenInkomen
+        tB+=nPNLB+tIV; // Final Total Gross
 
         const maxKostenPP = PB.INKOMSTENBELASTING.FORFAIT_BEROEPSKOSTEN_WERKNEMER_MAX||0;
         const kostenPercentage = PB.INKOMSTENBELASTING.FORFAIT_BEROEPSKOSTEN_WERKNEMER_PERCENTAGE||0;
@@ -313,7 +290,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (vals.p2 && isCouple) forfaitKosten += Math.min(p2LoonVoorKosten * kostenPercentage, maxKostenPP);
 
         const tBI_na_kosten = Math.max(0, tBI_voor_kosten - forfaitKosten);
-        const totaalBelastbaarInkomen = tBI_na_kosten + nettoBePension; // Inkomen na kosten + Netto BE Pensioen
+        const totaalBelastbaarInkomen = tBI_na_kosten + nettoBePension;
 
         // RV
         const spaarRenteDeel=tIV/2, overigRenteDividendDeel=tIV/2; const vrijstSpaarPP=PB.INKOMSTENBELASTING.ROERENDE_VOORHEFFING_VRIJSTELLING_SPAAR_PP||0; const vrijstSpaarTotaal=vrijstSpaarPP*(vals.isCouple?2:1); const belasteSpaarRente=Math.max(0,spaarRenteDeel-vrijstSpaarTotaal); const rvSpaar=belasteSpaarRente*(PB.INKOMSTENBELASTING.ROERENDE_VOORHEFFING_TARIEF_SPAAR||0);
@@ -327,7 +304,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // BSZB
         let bszb=0; const bszbSchijven = PB.SOCIALE_LASTEN.BIJZONDERE_BIJDRAGE_SCHIJVEN_GEZIN_2024||[];
-        const gezinsInkomenVoorBSZB = tBI_voor_kosten + brutoBePension; // Baseer op inkomen vóór kosten + bruto BE pensioen
+        const gezinsInkomenVoorBSZB = tBI_voor_kosten + brutoBePension; // BSZB basis = netto inkomen voor kosten + bruto BE pensioen
         for (const schijf of bszbSchijven) { if (gezinsInkomenVoorBSZB < schijf.grens) { bszb = schijf.bijdrage; break; } bszb = schijf.bijdrage||0; }
 
         const totaleTax = tSL + fB + gB + tRV + bszb;
@@ -335,24 +312,26 @@ document.addEventListener('DOMContentLoaded', () => {
         return { bruto:tB, tax:totaleTax, netto:nt, wealthTax:wT, breakdown:{simulatieDatum: simulatieDatum, nettoInkomenUitNL:nINL, socialeLasten:tSL, bePensionContrib: bePensionContrib, bszb: bszb, forfaitKosten: forfaitKosten, federaleBelasting:fB, gemeentebelasting:gB, roerendeVoorheffing:tRV }};
     }
 
-    // --- BREAKDOWN ---
+    // --- BREAKDOWN (FIXED) ---
     function generateBreakdown(vals, compare, fr) {
-        if (!vals || !compare || !fr || !compare.breakdown || !fr.breakdown) { return "Fout: Analyse data incompleet."; }
-        const wf=vals.wealthFinancial||0, wp=vals.wealthProperty||0; const est=wf+wp; const nlTR=PARAMS.NL?.BOX1?.TARIEVEN_BOVEN_AOW?.[0]||0;
-        const tIV = (vals.p1?.incomeWealth || 0) + (vals.p2?.incomeWealth || 0);
-        const { simulatieDatum } = compare.breakdown; // Haal sim datum uit breakdown
-        const simDatumStr = (inputs.simYear.value && inputs.simMonth.value) ? `per ${simulatieDatum.toLocaleString('nl-NL', { month: 'long', year: 'numeric' })}` : '(huidige situatie)';
+        try {
+            if (!vals || !compare || !fr || !compare.breakdown || !fr.breakdown) { return "Fout: Analyse data incompleet."; }
+            const wf=vals.wealthFinancial||0, wp=vals.wealthProperty||0; const est=wf+wp; const nlTR=PARAMS.NL?.BOX1?.TARIEVEN_BOVEN_AOW?.[0]||0;
+            const tIV = (vals.p1?.incomeWealth || 0) + (vals.p2?.incomeWealth || 0);
+            
+            const { simulatieDatum } = compare.breakdown; // Haal sim datum uit breakdown
+            const simDatumStr = (inputs.simYear.value && inputs.simMonth.value) ? `per ${simulatieDatum.toLocaleString('nl-NL', { month: 'long', year: 'numeric' })}` : '(huidige situatie)';
 
-        const getRetirementProjection = (p, idx) => { if(!p||!p.birthYear)return''; const aDI=getAOWDateInfo(p.birthYear); const aM=new Date((p.birthYear||1900)+aDI.years,(p.birthMonth||1)-1+aDI.months); const pL=vals.isCouple?`(P${idx+1})`:''; if(!simulatieDatum) return ''; if(simulatieDatum<aM){const n=simulatieDatum; let yD=aM.getFullYear()-n.getFullYear();let mD=aM.getMonth()-n.getMonth();if(mD<0){yD--;mD+=12;}return `\n    ↳ Wett. Pensioen${pL} over ${yD}j,${mD}m`;} return `\n    ↳ Wett. Pensioen${pL} loopt`; };
-        const projP1 = getRetirementProjection(vals.p1, 0); const projP2 = vals.p2 ? getRetirementProjection(vals.p2, 1) : '';
-        let compTitle = "...", compContent = "...";
+            const getRetirementProjection = (p, idx) => { if(!p||!p.birthYear)return''; const aDI=getAOWDateInfo(p.birthYear); const aM=new Date((p.birthYear||1900)+aDI.years,(p.birthMonth||1)-1+aDI.months); const pL=vals.isCouple?`(P${idx+1})`:''; if(!simulatieDatum) return ''; if(simulatieDatum<aM){const n=simulatieDatum; let yD=aM.getFullYear()-n.getFullYear();let mD=aM.getMonth()-n.getMonth();if(mD<0){yD--;mD+=12;}return `\n    ↳ Wett. Pensioen${pL} over ${yD}j,${mD}m`;} return `\n    ↳ Wett. Pensioen${pL} loopt`; };
+            const projP1 = getRetirementProjection(vals.p1, 0); const projP2 = vals.p2 ? getRetirementProjection(vals.p2, 1) : '';
+            let compTitle = "...", compContent = "...";
 
-        if (activeComparison === 'NL') {
-            const vS=PARAMS.NL?.BOX3?.VRIJSTELLING_SINGLE||0, vC=PARAMS.NL?.BOX3?.VRIJSTELLING_COUPLE||0;
-            const zvwP1 = (vals.p1?.business||0) > 0 ? (vals.p1.business * (1-(PARAMS.NL.BOX1.MKB_WINSTVRIJSTELLING||0))) * (PARAMS.NL.SOCIALE_LASTEN.ZVW_PERCENTAGE||0) : 0;
-            const zvwP2 = (vals.p2?.business||0) > 0 ? (vals.p2.business * (1-(PARAMS.NL.BOX1.MKB_WINSTVRIJSTELLING||0))) * (PARAMS.NL.SOCIALE_LASTEN.ZVW_PERCENTAGE||0) : 0;
-            compTitle = `Nederland 🇳🇱 ${simDatumStr}`;
-            compContent = `1. Bruto Inkomen Totaal: ${formatCurrency(compare.bruto)}
+            if (activeComparison === 'NL') {
+                const vS=PARAMS.NL?.BOX3?.VRIJSTELLING_SINGLE||0, vC=PARAMS.NL?.BOX3?.VRIJSTELLING_COUPLE||0;
+                const zvwP1 = (vals.p1?.business||0) > 0 ? (vals.p1.business * (1-(PARAMS.NL.BOX1.MKB_WINSTVRIJSTELLING||0))) * (PARAMS.NL.SOCIALE_LASTEN.ZVW_PERCENTAGE||0) : 0;
+                const zvwP2 = (vals.p2?.business||0) > 0 ? (vals.p2.business * (1-(PARAMS.NL.BOX1.MKB_WINSTVRIJSTELLING||0))) * (PARAMS.NL.SOCIALE_LASTEN.ZVW_PERCENTAGE||0) : 0;
+                compTitle = `Nederland 🇳🇱 ${simDatumStr}`;
+                compContent = `1. Bruto Inkomen Totaal: ${formatCurrency(compare.bruto)}
 2. Geschatte Lasten: ${formatCurrency(compare.tax)}
    ↳ IB (Box 1): ${formatCurrency(compare.tax - zvwP1 - zvwP2)} (incl. AHK/AK, soc. lasten werkn./pens.)
    ↳ Zvw (ondernemers): ${formatCurrency(zvwP1 + zvwP2)}
@@ -361,11 +340,11 @@ document.addEventListener('DOMContentLoaded', () => {
 4. Vermogen (Box 3):
    - Financieel: ${formatCurrency(wf)} (Vrijst.: ${formatCurrency(vals.isCouple ? vC : vS)})
    ↳ Aanslag: ${formatCurrency(compare.wealthTax)} (${((PARAMS.NL.BOX3.FORFAITAIR_RENDEMENT||0)*100).toFixed(2)}% fictief rend.)`;
-        }
-        else if (activeComparison === 'BE') {
-            const div=(1-nlTR); const bNP=div!==0?(compare.breakdown.nettoInkomenUitNL||0)/div:0;
-            compTitle = `België 🇧🇪 ${simDatumStr}`;
-            compContent = `1. Bruto Inkomen Totaal: ${formatCurrency(compare.bruto)}
+            }
+            else if (activeComparison === 'BE') {
+                const div=(1-nlTR); const bNP=div!==0?(compare.breakdown.nettoInkomenUitNL||0)/div:0;
+                compTitle = `België 🇧🇪 ${simDatumStr}`;
+                compContent = `1. Bruto Inkomen Totaal: ${formatCurrency(compare.bruto)}
    (Incl. NL pensioen bruto*: ${formatCurrency(bNP)})
 2. Sociale Lasten: ${formatCurrency(compare.breakdown.socialeLasten||0)}
    ↳ RSZ Werknemer (13,07%): -${formatCurrency((compare.breakdown.socialeLasten||0) - (compare.breakdown.bePensionContrib||0) - (compare.breakdown.bszb||0) )}
@@ -383,20 +362,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
 7. Vermogen: Aanslag: ${formatCurrency(compare.wealthTax)} (Geen alg. vermogensbelasting)
 * NL pensioen >€25k/jaar of overheidspensioen wordt in NL belast.`;
-        }
+            }
 
-        // --- FRANSE BREAKDOWN (met tIV en lijfrente fixes) ---
-        const pfuSocLasten_fr = fr.breakdown.pfuSocLasten || 0;
-        const beContribAftrek_fr = fr.breakdown.beContribAftrek || 0;
-        const lijfrenteSocLasten_fr = fr.breakdown.lijfrenteSocLasten || 0;
-        const frSocLastenExclPFUBeLijfrente = (fr.breakdown.socialeLasten || 0) - pfuSocLasten_fr - beContribAftrek_fr - lijfrenteSocLasten_fr;
-        const cakAftrek_fr = fr.breakdown.aftrekCak || 0;
-        const pfuTax_fr = fr.breakdown.pfuTax || 0;
-        const ibTax_fr = (fr.breakdown.tax || 0) - pfuTax_fr;
-        const belastingKrediet_fr = fr.breakdown.belastingKrediet || 0;
-        const belastbaarInkomen_fr = (fr.breakdown.brutoInFR || 0) - frSocLastenExclPFUBeLijfrente - beContribAftrek_fr - cakAftrek_fr - (fr.breakdown.lijfrenteBruto || 0) + (fr.breakdown.lijfrenteBelastbaar || 0);
+            // --- FRANSE BREAKDOWN (FIXED) ---
+            // Haal de benodigde waarden uit het 'fr.breakdown' object
+            const pfuSocLasten_fr = fr.breakdown.pfuSocLasten || 0;
+            const beContribAftrek_fr = fr.breakdown.beContribAftrek || 0;
+            const lijfrenteSocLasten_fr = fr.breakdown.lijfrenteSocLasten || 0;
+            const frSocLastenExclPFUBeLijfrente = fr.breakdown.frSocLastenInkomen || 0; // Dit was de fout
+            const cakAftrek_fr = fr.breakdown.aftrekCak || 0;
+            const pfuTax_fr = fr.breakdown.pfuTax || 0;
+            const ibTax_fr = (fr.breakdown.tax || 0) - pfuTax_fr;
+            const belastingKrediet_fr = fr.breakdown.belastingKrediet || 0;
+            const belastbaarInkomen_fr = (fr.breakdown.brutoInFR || 0) - frSocLastenExclPFUBeLijfrente - beContribAftrek_fr - cakAftrek_fr - (fr.breakdown.lijfrenteBruto || 0) + (fr.breakdown.lijfrenteBelastbaar || 0);
 
-        return `
+            return `
 Analyse ${activeComparison}-FR | ${vals.isCouple?'Partners':'Alleenst.'}, Kind:${vals.children||0} | Verm: ${formatCurrency(est)} (${formatCurrency(wf)} fin/${formatCurrency(wp)} vast) ${projP1}${projP2}
 Simulatiedatum: ${simDatumStr}
 ----------------------------------------------------------------------------------------------------
@@ -432,7 +412,12 @@ Frankrijk 🇫🇷 ${simDatumStr}
    ↳ Aanslag: ${formatCurrency(fr.wealthTax)}
 * Ovh. pensioen/NL pensioen >€25k bij wonen in BE (regel uit NL-BE verdrag, kan afwijken voor FR).
         `;
+        } catch (error) {
+            console.error("Fout in generateBreakdown:", error);
+            return `Fout bij genereren analyse: ${error.message}`;
+        }
     }
+
 
     // --- Start Applicatie ---
     initializeApp();
