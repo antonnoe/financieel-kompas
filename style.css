@@ -205,15 +205,15 @@ select { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 5px;
     font-size: 0.9em; margin-bottom: 5px;
 }
 .optional-setting .date-group div {
-    display: flex; gap: 5px;
+    display: flex; gap: 5px; /* Kleinere gap */
 }
 .optional-setting .date-group select {
-    padding: 8px;
+    padding: 8px; /* Compactere select */
 }
 .optional-setting .form-group .duration-select { /* Hergebruik voor lijfrente start */
     width: 100%;
     padding: 8px;
-    margin-top: 0;
+    margin-top: 0; /* Geen extra marge */
 }
 /* Optionele setting binnen een partner-section */
 .partner-section .optional-setting {
