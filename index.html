@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Financieel Kompas</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="assets/landing.css">
     <style>
         .be-specific { display: none; }
         .nl-specific { display: block; }
@@ -12,6 +13,231 @@
     </style>
 </head>
 <body>
+    <!-- Landing Wizard -->
+    <div id="landing-step">
+        <style>
+            #landing-step {
+                max-width: 600px;
+                margin: 40px auto;
+                padding: 30px;
+                background: #ffffff;
+                border-radius: 12px;
+                box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+            }
+            #landing-step h1 {
+                color: #800000;
+                text-align: center;
+                margin: 0 0 10px 0;
+                font-size: 2em;
+            }
+            #landing-step .subtitle {
+                text-align: center;
+                color: #666;
+                margin-bottom: 25px;
+                font-size: 1.1em;
+            }
+            #landing-step .disclaimer {
+                background-color: #e6f4ea;
+                border-left: 5px solid #28a745;
+                padding: 15px 20px;
+                margin-bottom: 25px;
+                border-radius: 8px;
+                font-size: 0.95em;
+            }
+            #landing-step .wizard-step {
+                display: none;
+            }
+            #landing-step .wizard-step.active {
+                display: block;
+            }
+            #landing-step .step-title {
+                font-size: 1.3em;
+                font-weight: bold;
+                margin-bottom: 20px;
+                color: #333;
+            }
+            #landing-step .country-buttons,
+            #landing-step .household-buttons {
+                display: flex;
+                gap: 15px;
+                justify-content: center;
+                margin: 25px 0;
+            }
+            #landing-step .country-btn,
+            #landing-step .household-btn {
+                flex: 1;
+                padding: 20px;
+                font-size: 1.1em;
+                border: 2px solid #ddd;
+                background: #fff;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+            #landing-step .country-btn:hover,
+            #landing-step .household-btn:hover {
+                border-color: #003366;
+                background: #f0f8ff;
+            }
+            #landing-step .country-btn.selected,
+            #landing-step .household-btn.selected {
+                border-color: #003366;
+                background: #003366;
+                color: #fff;
+            }
+            #landing-step .form-group {
+                margin-bottom: 20px;
+            }
+            #landing-step label {
+                display: block;
+                margin-bottom: 8px;
+                font-weight: 500;
+                color: #333;
+            }
+            #landing-step select {
+                width: 100%;
+                padding: 10px;
+                font-size: 1em;
+                border: 1px solid #ddd;
+                border-radius: 6px;
+                background: #fff;
+            }
+            #landing-step .date-inputs {
+                display: flex;
+                gap: 10px;
+            }
+            #landing-step .date-inputs select {
+                flex: 1;
+            }
+            #landing-step .navigation {
+                display: flex;
+                justify-content: space-between;
+                margin-top: 30px;
+                gap: 10px;
+            }
+            #landing-step .nav-btn {
+                padding: 12px 30px;
+                font-size: 1em;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+            #landing-step .btn-back {
+                background: #6c757d;
+                color: #fff;
+            }
+            #landing-step .btn-back:hover {
+                background: #5a6268;
+            }
+            #landing-step .btn-next,
+            #landing-step .btn-start {
+                background: #003366;
+                color: #fff;
+                margin-left: auto;
+            }
+            #landing-step .btn-next:hover,
+            #landing-step .btn-start:hover {
+                background: #002244;
+            }
+            #landing-step .btn-next:disabled {
+                background: #ccc;
+                cursor: not-allowed;
+            }
+            #landing-step .hidden {
+                display: none !important;
+            }
+        </style>
+
+        <h1>Financieel Kompas</h1>
+        <p class="subtitle">Welkom! Beantwoord enkele vragen om te beginnen.</p>
+        
+        <div class="disclaimer">
+            <p><strong>🛡️ Privacy:</strong> Deze tool draait volledig lokaal in uw browser. Er worden geen gegevens verzonden of opgeslagen op een server. Alle informatie blijft 100% anoniem en privé.</p>
+            <p style="margin-top: 10px;"><strong>⚠️ Disclaimer:</strong> Dit is een educatieve scenario-simulator en geen financieel advies. Raadpleeg altijd een gekwalificeerde adviseur voor uw persoonlijke situatie.</p>
+        </div>
+
+        <!-- Step 1: Country Choice -->
+        <div id="step-1" class="wizard-step active">
+            <div class="step-title">Stap 1 van 4: Met welk land wilt u Frankrijk vergelijken?</div>
+            <div class="country-buttons">
+                <button type="button" id="btn-country-nl" class="country-btn" data-country="NL">
+                    <div style="font-size: 2em; margin-bottom: 10px;">🇳🇱</div>
+                    <div>Nederland</div>
+                </button>
+                <button type="button" id="btn-country-be" class="country-btn" data-country="BE">
+                    <div style="font-size: 2em; margin-bottom: 10px;">🇧🇪</div>
+                    <div>België</div>
+                </button>
+            </div>
+            <div class="navigation">
+                <button type="button" id="next-1" class="nav-btn btn-next" disabled>Volgende →</button>
+            </div>
+        </div>
+
+        <!-- Step 2: Household Type -->
+        <div id="step-2" class="wizard-step">
+            <div class="step-title">Stap 2 van 4: Voor wie is deze berekening?</div>
+            <div class="household-buttons">
+                <button type="button" id="btn-household-single" class="household-btn" data-household="single">
+                    <div style="font-size: 2em; margin-bottom: 10px;">👤</div>
+                    <div>Alleenstaande</div>
+                </button>
+                <button type="button" id="btn-household-couple" class="household-btn" data-household="couple">
+                    <div style="font-size: 2em; margin-bottom: 10px;">👥</div>
+                    <div>Partners</div>
+                </button>
+            </div>
+            <div class="navigation">
+                <button type="button" id="back-2" class="nav-btn btn-back">← Vorige</button>
+                <button type="button" id="next-2" class="nav-btn btn-next" disabled>Volgende →</button>
+            </div>
+        </div>
+
+        <!-- Step 3: Birth Date -->
+        <div id="step-3" class="wizard-step">
+            <div class="step-title">Stap 3 van 4: Wat is uw geboortedatum?</div>
+            <div class="form-group">
+                <label for="landing-birth-year">Geboortejaar</label>
+                <div class="date-inputs">
+                    <select id="landing-birth-year" aria-label="Geboortejaar">
+                        <option value="">-- Selecteer jaar --</option>
+                    </select>
+                    <select id="landing-birth-month" aria-label="Geboortemaand">
+                        <option value="">-- Selecteer maand --</option>
+                    </select>
+                </div>
+            </div>
+            <div class="navigation">
+                <button type="button" id="back-3" class="nav-btn btn-back">← Vorige</button>
+                <button type="button" id="next-3" class="nav-btn btn-next" disabled>Volgende →</button>
+            </div>
+        </div>
+
+        <!-- Step 4: Emigration Date and Confirmation -->
+        <div id="step-4" class="wizard-step">
+            <div class="step-title">Stap 4 van 4: Gewenste datum emigratie (optioneel)</div>
+            <p style="color: #666; margin-bottom: 20px;">Voor welke datum wilt u de vergelijking berekenen? Laat leeg voor de huidige situatie.</p>
+            <div class="form-group">
+                <label for="landing-emigration-year">Emigratiejaar (optioneel)</label>
+                <div class="date-inputs">
+                    <select id="landing-emigration-year" aria-label="Emigratiejaar">
+                        <option value="">-- Huidig jaar --</option>
+                    </select>
+                    <select id="landing-emigration-month" aria-label="Emigratiemaand">
+                        <option value="">-- Huidige maand --</option>
+                    </select>
+                </div>
+            </div>
+            <div class="navigation">
+                <button type="button" id="back-4" class="nav-btn btn-back">← Vorige</button>
+                <button type="button" id="btn-complete" class="nav-btn btn-start">Start berekening →</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Form (hidden by default) -->
+    <div id="main-form" style="display:none;">
     <div class="container">
         <header>
             <h1>Financieel Kompas</h1>
@@ -129,6 +355,9 @@
              <p><strong>Disclaimer:</strong> Dit is een scenario-simulator en geen financieel advies. De berekeningen zijn gebaseerd op vereenvoudigde en gestandaardiseerde fiscale regels. Raadpleeg altijd een gekwalificeerde adviseur voor uw persoonlijke situatie. De ingevoerde data is anoniem en wordt niet opgeslagen.</p>
         </footer>
     </div>
+    </div><!-- End of main-form -->
+    
+    <script src="assets/landing.js"></script>
     <script src="script.js" defer></script>
 </body>
 </html>
