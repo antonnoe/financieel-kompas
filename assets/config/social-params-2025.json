@@ -1,0 +1,28 @@
+{
+  "FR": {
+    "SOCIALE_LASTEN": {
+      "SALARIS": 0.22,
+      "WINST_DIENSTEN": 0.21,
+      "WINST_VERHUUR": 0.21,
+      "LIJFRENTE_TARIEF": 0.091,
+      "PFU": 0.172,
+      "PENSIOEN": 0.091
+    },
+    "NOTE": "Waarden zijn aannames/voorbeelden: verifieer met URSSAF/Service-public voor 2025"
+  },
+  "BE": {
+    "SOCIALE_LASTEN": {
+      "SALARIS": 0.135,
+      "PENSIOEN_RIZIV_PERCENTAGE": 0.077,
+      "PENSIOEN_SOLIDARITEIT_PERCENTAGE": 0.005
+    },
+    "NOTE": "Voor zelfstandigen en werkgevers zijn aanvullende schijven/percentages nodig"
+  },
+  "NL": {
+    "SOCIALE_LASTEN": {
+      "ZVW_PERCENTAGE": 0.06,
+      "EMPLOYER_SALARY_PERCENTAGE": 0.18
+    },
+    "NOTE": "ZVW en werkgeversbijdragen zijn grove aannames"
+  }
+}
