@@ -77,6 +77,12 @@ document.addEventListener('DOMContentLoaded', () => {
         setupListeners();
         updateHouseholdType(false); updateComparisonCountry('NL');
         console.log("Application initialized.");
+        
+        // Auto-focus first field in Module 1
+        const firstField = getEl('birth-year-1');
+        if (firstField) {
+            setTimeout(() => firstField.focus(), 100);
+        }
     }
 
     // --- Core Functions ---
