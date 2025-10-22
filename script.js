@@ -196,7 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const cAOW=isPensioner?(Number(p.aowYears||0)/50)*(vals.isCouple?PARAMS.AOW_BRUTO_COUPLE:PARAMS.AOW_BRUTO_SINGLE):0;
             const cL = lijfrenteIsActive ? (p.lijfrente||0) : 0;
             const isWorking = simulatieDatum < aM; // Werkt tot AOW-leeftijd
-            const r=calculateNLNetto(cAOW+cP+cL, isWorking ? p.salary||0 : 0, isWorking ? p.business||0 : 0, isPensioner);
+            const r=calculateNLNetto(cAOW+cP+cL, isWorking ? p.salary||0 : 0, p.business||0, isPensioner);
             cB+=r.bruto;cT+=r.tax;cN+=r.netto;
         });
         const v=vals.isCouple?(PARAMS.NL.BOX3.VRIJSTELLING_COUPLE||0):(PARAMS.NL.BOX3.VRIJSTELLING_SINGLE||0); const wT=Math.max(0,(vals.wealthFinancial||0)-v)*(PARAMS.NL.BOX3.FORFAITAIR_RENDEMENT||0)*(PARAMS.NL.BOX3.TARIEF||0);
@@ -245,8 +245,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 lijfrenteSocLasten += lijfrenteBelastbaarDeel * (PARAMS.FR.SOCIALE_LASTEN.LIJFRENTE_TARIEF || 0);
             }
 
-            tLo+= isWorking ? (p.salary||0) : 0; tW+= isWorking ? (p.business||0) : 0;
-            if(isWorking) tBFA[p.businessType||'services']+=(p.business||0);
+            tLo+= isWorking ? (p.salary||0) : 0; tW+= (p.business||0);
+            tBFA[p.businessType||'services']+=(p.business||0);
             const bePensionBruto = p.bePension || 0;
             if (isPensioner && bePensionBruto > 0) {
                 totalBePension += bePensionBruto;
@@ -304,7 +304,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const lijfrenteStartAgeVal = p.lijfrenteStartAge === 'aow' ? (aDI.years + Math.floor(aDI.months / 12)) : parseInt(p.lijfrenteStartAge || '999', 10);
             const lijfrenteIsActive = simulatieLeeftijd >= lijfrenteStartAgeVal && simulatieLeeftijd < lDN;
 
-            const loon = isWorking ? s : 0; const winst = isWorking ? b : 0;
+            const loon = isWorking ? s : 0; const winst = b;
             const rW=loon*(PB.SOCIALE_LASTEN.WERKNEMER_RSZ_PERCENTAGE||0); const nettoLoonVoorKosten=loon-rW; tSL+=rW; tBI_voor_kosten+=nettoLoonVoorKosten;
             if (index === 0) p1LoonVoorKosten = nettoLoonVoorKosten; else p2LoonVoorKosten = nettoLoonVoorKosten;
             let rZ=0; if(winst>0){let iR=winst,vG=0; (PB.SOCIALE_LASTEN.ZELFSTANDIGE_SCHIJVEN||[]).forEach(sch=>{const cG=Number(sch.grens);let bIS=Math.max(0,Math.min(iR,cG-vG));rZ+=bIS*sch.tarief;iR-=bIS;vG=cG;});} const nettoWinstVoorKosten=winst-rZ; tSL+=rZ; tBI_voor_kosten+=nettoWinstVoorKosten;
