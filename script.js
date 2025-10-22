@@ -81,6 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
         householdType={single:getEl('btn-single'),couple:getEl('btn-couple')}; partner2Section=getEl('partner2-section');
         inputs = {
             simYear: getEl('sim-year'), simMonth: getEl('sim-month'),
+            stopSalaryAfterAOW: getEl('stop-salary-after-aow'),
             children: getEl('slider-children'), cak: getEl('cak-contribution'), homeHelp: getEl('home-help'), wealthFinancial: getEl('slider-wealth-financial'), wealthProperty: getEl('slider-wealth-property'),
             p1: { birthYear: getEl('birth-year-1'), birthMonth: getEl('birth-month-1'), aowYears: getEl('aow-years-1'), beWorkYears: getEl('be-work-years-1'), frWorkYears: getEl('fr-work-years-1'), bePension: getEl('slider-be-pension-1'), pensionPublic: getEl('slider-pension-public-1'), pensionPrivate: getEl('slider-pension-private-1'), lijfrente: getEl('slider-lijfrente-1'), lijfrenteDuration: getEl('lijfrente-duration-1'), lijfrenteStartAge: getEl('lijfrente-start-1'), incomeWealth: getEl('slider-income-wealth-1'), salary: getEl('slider-salary-1'), business: getEl('slider-business-1'), businessType: getEl('business-type-1') },
             p2: { birthYear: getEl('birth-year-2'), birthMonth: getEl('birth-month-2'), aowYears: getEl('aow-years-2'), beWorkYears: getEl('be-work-years-2'), frWorkYears: getEl('fr-work-years-2'), bePension: getEl('slider-be-pension-2'), pensionPublic: getEl('slider-pension-public-2'), pensionPrivate: getEl('slider-pension-private-2'), lijfrente: getEl('slider-lijfrente-2'), lijfrenteDuration: getEl('lijfrente-duration-2'), lijfrenteStartAge: getEl('lijfrente-start-2'), incomeWealth: getEl('slider-income-wealth-2'), salary: getEl('slider-salary-2'), business: getEl('slider-business-2'), businessType: getEl('business-type-2') },};
@@ -140,7 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const p1Input = getPartnerInput('p1'); if (!p1Input) throw new Error("P1 data invalid.");
             const p2Input = isCouple ? getPartnerInput('p2') : null; if (isCouple && !p2Input) throw new Error("P2 data invalid.");
-            const inputValues = { isCouple, children: Number(inputs.children?.value||0), cak: !!inputs.cak?.checked, homeHelp: Number(inputs.homeHelp?.value||0), wealthFinancial: Number(inputs.wealthFinancial?.value||0), wealthProperty: Number(inputs.wealthProperty?.value||0), p1: p1Input, p2: p2Input };
+            const inputValues = { isCouple, stopSalaryAfterAOW: !!inputs.stopSalaryAfterAOW?.checked, children: Number(inputs.children?.value||0), cak: !!inputs.cak?.checked, homeHelp: Number(inputs.homeHelp?.value||0), wealthFinancial: Number(inputs.wealthFinancial?.value||0), wealthProperty: Number(inputs.wealthProperty?.value||0), p1: p1Input, p2: p2Input };
             inputValues.estate = inputValues.wealthFinancial + inputValues.wealthProperty;
 
             [ { p: p1Input, elData: inputs.p1 }, { p: p2Input, elData: inputs.p2 } ].forEach(item => { const yS=activeComparison==='NL'?item.elData?.aowYears:item.elData?.beWorkYears; if(item.p&&yS){const m=50; yS.max=m; const c=Number(yS.value||0); const yP=activeComparison==='NL'?'aowYears':'beWorkYears'; item.p[yP]=Math.min(c,m); if(c>m)yS.value=m; const tt=yS.closest('.form-group')?.querySelector('.tooltip'); if(tt)tt.dataset.text=`Jaren ${activeComparison}(max ${m}). EU(${activeComparison}+FR) max 50.`;} if(item.p&&item.elData?.frWorkYears){const m=50; item.elData.frWorkYears.max=m; const c=Number(item.elData.frWorkYears.value||0); item.p.frWorkYears=Math.min(c,m); if(c>m)item.elData.frWorkYears.value=m; const tt=item.elData.frWorkYears.closest('.form-group')?.querySelector('.tooltip'); if(tt)tt.dataset.text=`Jaren FR(max ${m}). EU(${activeComparison}+FR) max 50.`;}});
@@ -196,7 +197,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const cAOW=isPensioner?(Number(p.aowYears||0)/50)*(vals.isCouple?PARAMS.AOW_BRUTO_COUPLE:PARAMS.AOW_BRUTO_SINGLE):0;
             const cL = lijfrenteIsActive ? (p.lijfrente||0) : 0;
             const isWorking = simulatieDatum < aM; // Werkt tot AOW-leeftijd
-            const r=calculateNLNetto(cAOW+cP+cL, isWorking ? p.salary||0 : 0, isWorking ? p.business||0 : 0, isPensioner);
+            const sUsed = (!vals.stopSalaryAfterAOW || isWorking) ? (p.salary||0) : 0;
+            const r=calculateNLNetto(cAOW+cP+cL, sUsed, p.business||0, isPensioner);
             cB+=r.bruto;cT+=r.tax;cN+=r.netto;
         });
         const v=vals.isCouple?(PARAMS.NL.BOX3.VRIJSTELLING_COUPLE||0):(PARAMS.NL.BOX3.VRIJSTELLING_SINGLE||0); const wT=Math.max(0,(vals.wealthFinancial||0)-v)*(PARAMS.NL.BOX3.FORFAITAIR_RENDEMENT||0)*(PARAMS.NL.BOX3.TARIEF||0);
@@ -245,8 +247,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 lijfrenteSocLasten += lijfrenteBelastbaarDeel * (PARAMS.FR.SOCIALE_LASTEN.LIJFRENTE_TARIEF || 0);
             }
 
-            tLo+= isWorking ? (p.salary||0) : 0; tW+= isWorking ? (p.business||0) : 0;
-            if(isWorking) tBFA[p.businessType||'services']+=(p.business||0);
+            tLo+= (!vals.stopSalaryAfterAOW || isWorking) ? (p.salary||0) : 0;
+            tW+= (p.business||0);
+            tBFA[p.businessType||'services']+=(p.business||0);
             const bePensionBruto = p.bePension || 0;
             if (isPensioner && bePensionBruto > 0) {
                 totalBePension += bePensionBruto;
@@ -304,7 +307,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const lijfrenteStartAgeVal = p.lijfrenteStartAge === 'aow' ? (aDI.years + Math.floor(aDI.months / 12)) : parseInt(p.lijfrenteStartAge || '999', 10);
             const lijfrenteIsActive = simulatieLeeftijd >= lijfrenteStartAgeVal && simulatieLeeftijd < lDN;
 
-            const loon = isWorking ? s : 0; const winst = isWorking ? b : 0;
+            const loon = (!vals.stopSalaryAfterAOW || isWorking) ? s : 0;
+            const winst = b; // always
             const rW=loon*(PB.SOCIALE_LASTEN.WERKNEMER_RSZ_PERCENTAGE||0); const nettoLoonVoorKosten=loon-rW; tSL+=rW; tBI_voor_kosten+=nettoLoonVoorKosten;
             if (index === 0) p1LoonVoorKosten = nettoLoonVoorKosten; else p2LoonVoorKosten = nettoLoonVoorKosten;
             let rZ=0; if(winst>0){let iR=winst,vG=0; (PB.SOCIALE_LASTEN.ZELFSTANDIGE_SCHIJVEN||[]).forEach(sch=>{const cG=Number(sch.grens);let bIS=Math.max(0,Math.min(iR,cG-vG));rZ+=bIS*sch.tarief;iR-=bIS;vG=cG;});} const nettoWinstVoorKosten=winst-rZ; tSL+=rZ; tBI_voor_kosten+=nettoWinstVoorKosten;
