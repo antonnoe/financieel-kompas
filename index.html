@@ -12,6 +12,27 @@
     </style>
 </head>
 <body>
+    <section id="start-overlay" class="start-overlay" role="dialog" aria-modal="true">
+        <div class="start-card">
+            <h2>Welkom bij Financieel Kompas</h2>
+            <p style="text-align:center;margin-bottom:20px;">Beantwoord eerst een paar vragen:</p>
+            <div class="start-group">
+                <label>Vergelijk Frankrijk met:</label>
+                <div class="choice-buttons">
+                    <button class="start-choice" data-click-target="#btn-nl">Nederland 🇳🇱</button>
+                    <button class="start-choice" data-click-target="#btn-be">België 🇧🇪</button>
+                </div>
+            </div>
+            <div class="start-group">
+                <label>Voor wie?</label>
+                <div class="choice-buttons">
+                    <button class="start-choice" data-click-target="#btn-single">Alleenstaande</button>
+                    <button class="start-choice" data-click-target="#btn-couple">Partners</button>
+                </div>
+            </div>
+            <button id="start-continue" class="primary" style="width:100%;margin-top:20px;">Start berekening</button>
+        </div>
+    </section>
     <div class="container">
         <header>
             <h1>Financieel Kompas</h1>

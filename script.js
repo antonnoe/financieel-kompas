@@ -1,4 +1,24 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // === STARTPAGINA OVERLAY ===
+    const overlay = document.getElementById('start-overlay');
+    if (overlay) {
+        overlay.addEventListener('click', (e) => {
+            const choice = e.target.closest('.start-choice');
+            if (choice) {
+                const group = choice.closest('.start-group');
+                group.querySelectorAll('.start-choice').forEach(b => b.classList.remove('active'));
+                choice.classList.add('active');
+                const sel = choice.getAttribute('data-click-target');
+                const target = document.querySelector(sel);
+                if (target) target.click(); // leverage existing logic for NL/BE and Alleenstaande/Partners
+            }
+            if (e.target && e.target.id === 'start-continue') {
+                overlay.remove(); // reveal the tool
+                document.getElementById('input-panel')?.scrollIntoView({behavior:'smooth', block:'start'});
+            }
+        });
+    }
+
     // --- Globale variabelen ---
     let PARAMS; let isCouple = false; let initialLoad = true; let activeComparison = 'NL'; const MAX_WORK_YEARS = 50;
     let comparisonChoice, compareCountryResult, compareCountryLabel, compareCountryFlag;
