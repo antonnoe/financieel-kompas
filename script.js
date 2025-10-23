@@ -283,7 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const tIF_withNL = totaleSocialeLastenFrankrijk + pT + Math.max(0,tax) + nlWithholding; // Include NL bronheffing
         const nt = br - tIF_withNL; // Netto = Bruto - Lasten
         let wT=0; const wPN=vals.wealthProperty||0; const ifiStart = PARAMS.FR.IFI.DREMPEL_START || Infinity; if(wPN>ifiStart){let tA=wPN;wT=0;let pL=800000;for(const s of (PARAMS.FR.IFI.SCHIJVEN||[])){const cG=s.grens===Infinity?Infinity:Number(s.grens);if(tA<=pL)break; const aIS=Math.max(0,Math.min(tA,cG)-pL); wT+=aIS*s.tarief; pL=cG; if(tA<=cG)break;}}
-        return {bruto:br,tax:tIF_withNL,netto:nt,wealthTax:wT, breakdown:{ simulatieDatum: simulatieDatum, socialeLasten:totaleSocialeLastenFrankrijk, nlWithholdingOnGovPension:nlWithholding, aftrekCak:aC, beContribAftrek: totalBePensionContributions, belastingKrediet:bK,tax:Math.max(0,tax)+pT,calculatedTaxIB:tax,parts:parts,nettoInkomenUitNL:nINL,brutoInFR:bIF,brutoInkomenVoorNLBelasting:bINLB,frStatePension:fSPA, lijfrenteBruto: totalLijfrenteBruto, lijfrenteBelastbaar: totalLijfrenteBelastbaar, pfuTax: pT, pfuSocLasten: pSL, frSocLastenInkomen: tSL_excl_lijfrente, lijfrenteSocLasten: lijfrenteSocLasten }};
+        return {bruto:br,tax:tIF_withNL,netto:nt,wealthTax:wT, breakdown:{ simulatieDatum: simulatieDatum, socialeLasten:totaleSocialeLastenFrankrijk, nlWithholdingOnGovPension:nlWithholding, aftrekCak:aC, beContribAftrek: totalBePensionContributions, abattement65Plus: a65, belastingKrediet:bK,tax:Math.max(0,tax)+pT,calculatedTaxIB:tax,parts:parts,nettoInkomenUitNL:nINL,brutoInFR:bIF,brutoInkomenVoorNLBelasting:bINLB,frStatePension:fSPA, lijfrenteBruto: totalLijfrenteBruto, lijfrenteBelastbaar: totalLijfrenteBelastbaar, pfuTax: pT, pfuSocLasten: pSL, frSocLastenInkomen: tSL_excl_lijfrente, lijfrenteSocLasten: lijfrenteSocLasten }};
     }
 
     // --- BELGIË ---
@@ -292,6 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let tB=0, tBI_voor_kosten=0, tSL=0, tIV=0, tRV=0, nPNLB=0;
         let brutoBePension=0, bePensionContrib=0;
         let p1LoonVoorKosten = 0, p2LoonVoorKosten = 0;
+        let totalRszWerknemer=0, totalZelfstandigenbijdrage=0, totalLoon=0, totalWinst=0;
         const P=[vals.p1, vals.p2].filter(p=>p); const PB=PARAMS.BE;
         const { simulatieDatum, simulatieLeeftijdP1, simulatieLeeftijdP2 } = getSimulationInfo(vals);
 
@@ -309,9 +310,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const loon = (!vals.stopSalaryAfterAOW || isWorking) ? s : 0;
             const winst = b; // always
-            const rW=loon*(PB.SOCIALE_LASTEN.WERKNEMER_RSZ_PERCENTAGE||0); const nettoLoonVoorKosten=loon-rW; tSL+=rW; tBI_voor_kosten+=nettoLoonVoorKosten;
+            totalLoon += loon;
+            totalWinst += winst;
+            const rW=loon*(PB.SOCIALE_LASTEN.WERKNEMER_RSZ_PERCENTAGE||0); const nettoLoonVoorKosten=loon-rW; totalRszWerknemer+=rW; tSL+=rW; tBI_voor_kosten+=nettoLoonVoorKosten;
             if (index === 0) p1LoonVoorKosten = nettoLoonVoorKosten; else p2LoonVoorKosten = nettoLoonVoorKosten;
-            let rZ=0; if(winst>0){let iR=winst,vG=0; (PB.SOCIALE_LASTEN.ZELFSTANDIGE_SCHIJVEN||[]).forEach(sch=>{const cG=Number(sch.grens);let bIS=Math.max(0,Math.min(iR,cG-vG));rZ+=bIS*sch.tarief;iR-=bIS;vG=cG;});} const nettoWinstVoorKosten=winst-rZ; tSL+=rZ; tBI_voor_kosten+=nettoWinstVoorKosten;
+            let rZ=0; if(winst>0){let iR=winst,vG=0; (PB.SOCIALE_LASTEN.ZELFSTANDIGE_SCHIJVEN||[]).forEach(sch=>{const cG=Number(sch.grens);let bIS=Math.max(0,Math.min(iR,cG-vG));rZ+=bIS*sch.tarief;iR-=bIS;vG=cG;});} const nettoWinstVoorKosten=winst-rZ; totalZelfstandigenbijdrage+=rZ; tSL+=rZ; tBI_voor_kosten+=nettoWinstVoorKosten;
             tB+=loon+winst;
 
             const cAOW=isPensioner?(aY/50)*(vals.isCouple?PARAMS.AOW_BRUTO_COUPLE:PARAMS.AOW_BRUTO_SINGLE):0; const cABP=isPensioner?pP:0; const cP=isPensioner?pPr:0; const cL=lijfrenteIsActive?l:0;
@@ -353,7 +356,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const totaleTaxWithNL = tSL + fB + gB + tRV + bszb + nlWithholding; // Include NL bronheffing
         const nt = tB - totaleTaxWithNL; const wT = 0;
-        return { bruto:tB, tax:totaleTaxWithNL, netto:nt, wealthTax:wT, breakdown:{simulatieDatum: simulatieDatum, nettoInkomenUitNL:nINL, nlWithholdingOnGovPension:nlWithholding, socialeLasten:tSL, bePensionContrib: bePensionContrib, bszb: bszb, forfaitKosten: forfaitKosten, federaleBelasting:fB, gemeentebelasting:gB, roerendeVoorheffing:tRV }};
+        return { bruto:tB, tax:totaleTaxWithNL, netto:nt, wealthTax:wT, breakdown:{simulatieDatum: simulatieDatum, nettoInkomenUitNL:nINL, nlWithholdingOnGovPension:nlWithholding, socialeLasten:tSL, rszWerknemer: totalRszWerknemer, zelfstandigenbijdrage: totalZelfstandigenbijdrage, bePensionContrib: bePensionContrib, brutoBePension: brutoBePension, totalLoon: totalLoon, totalWinst: totalWinst, bszb: bszb, forfaitKosten: forfaitKosten, federaleBelasting:fB, gemeentebelasting:gB, roerendeVoorheffing:tRV }};
     }
 
     // --- BREAKDOWN (FIXED) ---
@@ -388,13 +391,30 @@ document.addEventListener('DOMContentLoaded', () => {
             else if (activeComparison === 'BE') {
                 const div=(1-nlTR); const bNP=div!==0?(compare.breakdown.nettoInkomenUitNL||0)/div:0;
                 const nlWithholding = compare.breakdown.nlWithholdingOnGovPension || 0;
+                const rszWerknemer = compare.breakdown.rszWerknemer || 0;
+                const zelfstandigenbijdrage = compare.breakdown.zelfstandigenbijdrage || 0;
+                const bePensionContrib = compare.breakdown.bePensionContrib || 0;
+                const bszb = compare.breakdown.bszb || 0;
+                
+                // Build social contributions breakdown conditionally
+                let socialeLastenBreakdown = '';
+                if (rszWerknemer > 0) {
+                    socialeLastenBreakdown += `\n   ↳ RSZ Werknemer (13,07%): -${formatCurrency(rszWerknemer)}`;
+                }
+                if (zelfstandigenbijdrage > 0) {
+                    socialeLastenBreakdown += `\n   ↳ Zelfstandigenbijdrage: -${formatCurrency(zelfstandigenbijdrage)}`;
+                }
+                if (bePensionContrib > 0) {
+                    socialeLastenBreakdown += `\n   ↳ RIZIV (3,55%) + Solidariteit (~1%) op BE pensioen: -${formatCurrency(bePensionContrib)}`;
+                }
+                if (bszb > 0) {
+                    socialeLastenBreakdown += `\n   ↳ Bijzondere Sociale Zekerheidsbijdrage (BSZB): -${formatCurrency(bszb)}`;
+                }
+                
                 compTitle = `België 🇧🇪 ${simDatumStr}`;
                 compContent = `1. Bruto Inkomen Totaal: ${formatCurrency(compare.bruto)}
    (Incl. NL pensioen bruto*: ${formatCurrency(bNP)})
-2. Sociale Lasten: ${formatCurrency(compare.breakdown.socialeLasten||0)}
-   ↳ RSZ Werknemer (13,07%): -${formatCurrency((compare.breakdown.socialeLasten||0) - (compare.breakdown.bePensionContrib||0) - (compare.breakdown.bszb||0) )}
-   ↳ RIZIV (3,55%) + Solid. (~1%) op BE pensioen: -${formatCurrency(compare.breakdown.bePensionContrib||0)}
-   ↳ Bijz. Soc. Zekerheidsbijdrage (BSZB): -${formatCurrency(compare.breakdown.bszb||0)}
+2. Sociale Lasten: ${formatCurrency(compare.breakdown.socialeLasten||0)}${socialeLastenBreakdown}
    = Subtotaal na SZ: ${formatCurrency(compare.bruto - (compare.breakdown.socialeLasten||0))}
 3. Beroepskosten (Forfait werknemer): -${formatCurrency(compare.breakdown.forfaitKosten||0)}
    = Belastbaar Inkomen: ${formatCurrency(compare.bruto - (compare.breakdown.socialeLasten||0) - (compare.breakdown.forfaitKosten||0))}
@@ -420,8 +440,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const ibTax_fr = (fr.breakdown.tax || 0) - pfuTax_fr;
             const belastingKrediet_fr = fr.breakdown.belastingKrediet || 0;
             const nlWithholding_fr = fr.breakdown.nlWithholdingOnGovPension || 0;
+            const abattement65Plus_fr = fr.breakdown.abattement65Plus || 0;
             // Benadering belastbaar inkomen voor weergave
             const belastbaarInkomen_fr = (fr.breakdown.brutoInFR || 0) - frSocLastenExclPFUBeLijfrente - beContribAftrek_fr - cakAftrek_fr - (fr.breakdown.lijfrenteBruto || 0) + (fr.breakdown.lijfrenteBelastbaar || 0);
+
+            // Build conditional FR "Overige Aftrekposten" lines
+            let overigeAftrekposten_fr = '';
+            if (cakAftrek_fr > 0) {
+                overigeAftrekposten_fr += `\n   ↳ Aftrek CAK-bijdrage (NL): -${formatCurrency(cakAftrek_fr)}`;
+            }
+            if (beContribAftrek_fr > 0) {
+                overigeAftrekposten_fr += `\n   ↳ Aftrek BE pensioenbijdragen: -${formatCurrency(beContribAftrek_fr)}`;
+            }
+            if (abattement65Plus_fr > 0) {
+                overigeAftrekposten_fr += `\n   ↳ Abattement 65+: -${formatCurrency(abattement65Plus_fr)}`;
+            }
 
             // Check for invariant adjustments
             let invariantNote = '';
@@ -446,11 +479,8 @@ Frankrijk 🇫🇷 ${simDatumStr}
    ↳ FR Soc. Lasten (Vermogen PFU 17.2%): -${formatCurrency(pfuSocLasten_fr)}
    ↳ BE Soc. Lasten (Pensioen RIZIV/Solid.): -${formatCurrency(beContribAftrek_fr)} (Betaald in BE)
    = Subtotaal na SZ: ${formatCurrency(fr.bruto - (fr.breakdown.socialeLasten||0))}
-3. Overige Aftrekposten FR:
-   ↳ Aftrek CAK-bijdrage (NL): -${formatCurrency(cakAftrek_fr)}
-   ↳ Aftrek BE pensioenbijdragen: -${formatCurrency(beContribAftrek_fr)}
-   ↳ Abattement 65+ (indien van toepassing)
-   = Belastbaar Inkomen FR (vóór IB): ${formatCurrency(belastbaarInkomen_fr - (/* a65plus */ 0))}
+3. Overige Aftrekposten FR:${overigeAftrekposten_fr}
+   = Belastbaar Inkomen FR (vóór IB): ${formatCurrency(belastbaarInkomen_fr - abattement65Plus_fr)}
       (Lijfrente slechts deels belast: ${formatCurrency(fr.breakdown.lijfrenteBelastbaar||0)} van ${formatCurrency(fr.breakdown.lijfrenteBruto||0)})
 4. Belastingen FR (Totaal): ${formatCurrency(fr.breakdown.tax||0)}
    ↳ Inkomstenbelasting (IB) na QF (${fr.breakdown.parts?.toFixed(1)||0} parts): ${formatCurrency(ibTax_fr)}
