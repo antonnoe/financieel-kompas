@@ -512,3 +512,29 @@ Frankrijk 🇫🇷 ${simDatumStr}
     initializeApp();
 
 }); // Einde DOMContentLoaded listener
+// === DOSSIER FRANKIJK INTEGRATIE ===
+document.getElementById('save-dossier-btn')?.addEventListener('click', function() {
+    var compareCountry = document.getElementById('compare-country-label')?.textContent || 'Nederland';
+    var compareNetto = document.getElementById('compare-netto')?.textContent || '€ 0';
+    var frNetto = document.getElementById('fr-netto')?.textContent || '€ 0';
+    var conclusionValue = document.getElementById('conclusion-value')?.textContent || '€ 0';
+    var conclusionClass = document.getElementById('conclusion-value')?.classList.contains('positive') ? 'voordeel Frankrijk' : 'voordeel ' + compareCountry;
+    
+    var summary = 'Financieel Kompas resultaat:\n' +
+        compareCountry + ' netto: ' + compareNetto + '\n' +
+        'Frankrijk netto: ' + frNetto + '\n' +
+        'Verschil: ' + conclusionValue + ' (' + conclusionClass + ')';
+    
+    var data = {
+        type: 'saveToDossier',
+        title: 'Financieel Kompas: ' + compareCountry + ' vs Frankrijk',
+        summary: summary,
+        source: 'financieel-kompas'
+    };
+    
+    if (window.parent !== window) {
+        window.parent.postMessage(data, '*');
+    } else {
+        alert('Deze functie werkt alleen binnen InfoFrankrijk.com');
+    }
+});
