@@ -515,19 +515,65 @@ Frankrijk 🇫🇷 ${simDatumStr}
 // === DOSSIER FRANKIJK INTEGRATIE ===
 document.getElementById('save-dossier-btn')?.addEventListener('click', function() {
     var compareCountry = document.getElementById('compare-country-label')?.textContent || 'Nederland';
+    var compareBruto = document.getElementById('compare-bruto')?.textContent || '€ 0';
+    var compareTax = document.getElementById('compare-tax')?.textContent || '€ 0';
     var compareNetto = document.getElementById('compare-netto')?.textContent || '€ 0';
-    var frNetto = document.getElementById('fr-netto')?.textContent || '€ 0';
-    var conclusionValue = document.getElementById('conclusion-value')?.textContent || '€ 0';
-    var conclusionClass = document.getElementById('conclusion-value')?.classList.contains('positive') ? 'voordeel Frankrijk' : 'voordeel ' + compareCountry;
+    var compareWealth = document.getElementById('wealth-tax-compare')?.textContent || '€ 0';
     
-    var summary = 'Financieel Kompas resultaat:\n' +
-        compareCountry + ' netto: ' + compareNetto + '\n' +
-        'Frankrijk netto: ' + frNetto + '\n' +
-        'Verschil: ' + conclusionValue + ' (' + conclusionClass + ')';
+    var frBruto = document.getElementById('fr-bruto')?.textContent || '€ 0';
+    var frTax = document.getElementById('fr-tax')?.textContent || '€ 0';
+    var frNetto = document.getElementById('fr-netto')?.textContent || '€ 0';
+    var frWealth = document.getElementById('wealth-tax-fr')?.textContent || '€ 0';
+    
+    var conclusionValue = document.getElementById('conclusion-value')?.textContent || '€ 0';
+    var isPositive = document.getElementById('conclusion-value')?.classList.contains('positive');
+    var conclusionText = isPositive ? 'Voordeel Frankrijk' : 'Voordeel ' + compareCountry;
+    
+    // Huishouden info
+    var isSingle = document.getElementById('btn-single')?.classList.contains('active');
+    var household = isSingle ? 'Alleenstaand' : 'Partners';
+    var children = document.getElementById('slider-children')?.value || '0';
+    
+    // Vermogen
+    var wealthFin = document.getElementById('value-wealth-financial')?.textContent || '€ 0';
+    var wealthProp = document.getElementById('value-wealth-property')?.textContent || '€ 0';
+    
+    // Datum
+    var today = new Date().toLocaleDateString('nl-NL');
+    
+    var summary = '═══════════════════════════════════════\n' +
+        'FINANCIEEL KOMPAS - VERGELIJKING\n' +
+        'Datum: ' + today + '\n' +
+        '═══════════════════════════════════════\n\n' +
+        'SITUATIE\n' +
+        '• Huishouden: ' + household + '\n' +
+        '• Kinderen: ' + children + '\n' +
+        '• Fin. vermogen: ' + wealthFin + '\n' +
+        '• Vastgoed (excl. hoofd): ' + wealthProp + '\n\n' +
+        '───────────────────────────────────────\n' +
+        compareCountry.toUpperCase() + '\n' +
+        '───────────────────────────────────────\n' +
+        '• Bruto inkomen: ' + compareBruto + '\n' +
+        '• Lasten: ' + compareTax + '\n' +
+        '• NETTO INKOMEN: ' + compareNetto + '\n' +
+        '• Vermogensbelasting: ' + compareWealth + '\n\n' +
+        '───────────────────────────────────────\n' +
+        'FRANKRIJK\n' +
+        '───────────────────────────────────────\n' +
+        '• Bruto inkomen: ' + frBruto + '\n' +
+        '• Lasten: ' + frTax + '\n' +
+        '• NETTO INKOMEN: ' + frNetto + '\n' +
+        '• Vermogensbelasting (IFI): ' + frWealth + '\n\n' +
+        '═══════════════════════════════════════\n' +
+        'CONCLUSIE: ' + conclusionValue + '\n' +
+        conclusionText + '\n' +
+        '═══════════════════════════════════════\n\n' +
+        'Let op: Dit is een indicatieve berekening.\n' +
+        'Raadpleeg een adviseur voor uw specifieke situatie.';
     
     var data = {
         type: 'saveToDossier',
-        title: 'Financieel Kompas: ' + compareCountry + ' vs Frankrijk',
+        title: 'Financieel Kompas: ' + household + ' | ' + compareCountry + ' vs Frankrijk | ' + conclusionValue,
         summary: summary,
         source: 'financieel-kompas'
     };
