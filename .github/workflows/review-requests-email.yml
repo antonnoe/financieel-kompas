@@ -1,0 +1,184 @@
+name: Send Review Request Notifications
+
+# Trigger on PR events and on a daily schedule
+on:
+  pull_request:
+    types: [opened, review_requested, synchronize]
+  schedule:
+    # Daily at 9 AM UTC
+    - cron: '0 9 * * *'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  notify-review-requests:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Get pending review requests
+        id: get_reviews
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            
+            // Get all open PRs
+            const { data: pullRequests } = await github.rest.pulls.list({
+              owner,
+              repo,
+              state: 'open',
+              sort: 'created',
+              direction: 'asc'
+            });
+            
+            // Filter PRs with pending reviews
+            const pendingReviews = [];
+            
+            for (const pr of pullRequests) {
+              const { data: reviews } = await github.rest.pulls.listReviews({
+                owner,
+                repo,
+                pull_number: pr.number
+              });
+              
+              const { data: requestedReviewers } = await github.rest.pulls.listRequestedReviewers({
+                owner,
+                repo,
+                pull_number: pr.number
+              });
+              
+              // Check if there are requested reviewers or no approvals yet
+              const hasRequestedReviewers = requestedReviewers.users.length > 0 || requestedReviewers.teams.length > 0;
+              const hasApproval = reviews.some(r => r.state === 'APPROVED');
+              
+              if (hasRequestedReviewers || (!hasApproval && !pr.draft)) {
+                pendingReviews.push({
+                  number: pr.number,
+                  title: pr.title,
+                  url: pr.html_url,
+                  author: pr.user.login,
+                  created_at: pr.created_at,
+                  draft: pr.draft,
+                  requested_reviewers: requestedReviewers.users.map(u => u.login),
+                  has_approval: hasApproval
+                });
+              }
+            }
+            
+            // Sort by creation date (oldest first)
+            pendingReviews.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+            
+            return pendingReviews;
+      
+      - name: Create email summary
+        id: create_summary
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const reviews = ${{ steps.get_reviews.outputs.result }};
+            
+            if (reviews.length === 0) {
+              core.setOutput('has_reviews', 'false');
+              return 'No pending reviews at this time.';
+            }
+            
+            core.setOutput('has_reviews', 'true');
+            
+            let summary = `# Review Requests Summary\n\n`;
+            summary += `**Repository:** ${context.repo.owner}/${context.repo.repo}\n`;
+            summary += `**Date:** ${new Date().toISOString().split('T')[0]}\n\n`;
+            summary += `## Instructions\n\n`;
+            summary += `The following pull requests are awaiting your review, listed in chronological order (oldest first).\n`;
+            summary += `Please review them in this order to maintain project flow:\n\n`;
+            
+            reviews.forEach((review, index) => {
+              summary += `### ${index + 1}. PR #${review.number}: ${review.title}\n\n`;
+              summary += `- **Author:** @${review.author}\n`;
+              summary += `- **Created:** ${new Date(review.created_at).toLocaleDateString()}\n`;
+              summary += `- **Status:** ${review.draft ? '🚧 Draft' : '✅ Ready for review'}\n`;
+              summary += `- **Link:** ${review.url}\n`;
+              
+              if (review.requested_reviewers.length > 0) {
+                summary += `- **Requested Reviewers:** ${review.requested_reviewers.map(r => '@' + r).join(', ')}\n`;
+              }
+              
+              summary += `\n**Review Actions:**\n`;
+              summary += `1. Visit ${review.url}\n`;
+              summary += `2. Review the changes\n`;
+              summary += `3. Approve, request changes, or comment\n`;
+              summary += `4. If approved, merge the PR\n\n`;
+              summary += `---\n\n`;
+            });
+            
+            summary += `## Quick Actions\n\n`;
+            summary += `- [View all open PRs](https://github.com/${context.repo.owner}/${context.repo.repo}/pulls)\n`;
+            summary += `- [View your review requests](https://github.com/pulls/review-requested)\n\n`;
+            
+            console.log(summary);
+            return summary;
+      
+      - name: Create or update issue with review summary
+        if: steps.create_summary.outputs.has_reviews == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const summary = ${{ steps.create_summary.outputs.result }};
+            const issueTitle = '📧 Pending Review Requests Summary';
+            
+            // Find existing summary issue
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner,
+              repo,
+              state: 'open',
+              labels: 'review-summary',
+              creator: 'github-actions[bot]'
+            });
+            
+            const existingIssue = issues.find(issue => issue.title === issueTitle);
+            
+            if (existingIssue) {
+              // Update existing issue
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: existingIssue.number,
+                body: summary
+              });
+              
+              // Add comment to notify
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: existingIssue.number,
+                body: `🔄 Summary updated on ${new Date().toISOString()}`
+              });
+              
+              console.log(`Updated existing issue #${existingIssue.number}`);
+            } else {
+              // Create new issue
+              const { data: newIssue } = await github.rest.issues.create({
+                owner,
+                repo,
+                title: issueTitle,
+                body: summary,
+                labels: ['review-summary', 'automated']
+              });
+              
+              console.log(`Created new issue #${newIssue.number}`);
+            }
+      
+      - name: Send notification comment on PRs
+        if: github.event_name == 'pull_request' && github.event.action == 'review_requested'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const summary = ${{ steps.create_summary.outputs.result }};
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: `📧 **Review Request Notification**\n\nThis PR has been added to the review queue.\n\n${summary}`
+            });
