@@ -180,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!initialLoad) {
               window.ccEmbed = {
                 getToolContext: () => ({
-                  summary: `${activeComparison} netto: ${formatCurrency(compareResults.netto)} | FR netto: ${formatCurrency(frResults.netto)} | Verschil: ${formatCurrency(frResults.netto - compareResults.netto, true)} | Parts: ${frResults.breakdown?.parts || '-'} | Vermogensbelasting ${activeComparison}: ${formatCurrency(compareResults.wealthTax)} | IFI FR: ${formatCurrency(frResults.wealthTax)}`,
+                  summary: `Vergelijking: ${activeComparison} vs. Frankrijk | ${activeComparison} netto: ${formatCurrency(compareResults.netto)} | FR netto: ${formatCurrency(frResults.netto)} | Verschil: ${formatCurrency(frResults.netto - compareResults.netto, true)} (${(frResults.netto - compareResults.netto) >= 0 ? 'POSITIEF = Frankrijk is voordeliger' : 'NEGATIEF = ' + activeComparison + ' is voordeliger'}) | Parts: ${frResults.breakdown?.parts || '-'} | Vermogensbelasting ${activeComparison}: ${formatCurrency(compareResults.wealthTax)} | IFI FR: ${formatCurrency(frResults.wealthTax)}`,
                   details: {
                     comparison: activeComparison,
                     compareBruto: compareResults.bruto,
@@ -606,4 +606,5 @@ document.getElementById('save-dossier-btn')?.addEventListener('click', function(
         alert('Deze functie werkt alleen binnen InfoFrankrijk.com');
     }
 });
+
 
