@@ -176,7 +176,29 @@ document.addEventListener('DOMContentLoaded', () => {
             const frN=frResults.netto||0, compN=compareResults.netto||0, frW=frResults.wealthTax||0, compW=compareResults.wealthTax||0; const delta=(frN-compN)+(compW-frW);
             if(outputs.conclusionValue)outputs.conclusionValue.textContent=formatCurrency(delta,true); if(outputs.conclusionBar)outputs.conclusionBar.className=delta>=0?'positive':'negative'; if(outputs.conclusionExpl)outputs.conclusionExpl.textContent=delta>=0?"Positief: voordeel in Frankrijk.":"Negatief: voordeel in vergeleken land.";
             if(outputs.breakdown){if(initialLoad){outputs.breakdown.innerHTML=`<p style="text-align: center;">Welkom! 🧭 Vul data in.</p>`; initialLoad=false;}else{outputs.breakdown.textContent=generateBreakdown(inputValues,compareResults,frResults);}}
-
+// Café Claude widget — resultaten beschikbaar maken
+            if (!initialLoad) {
+              window.ccEmbed = {
+                getToolContext: () => ({
+                  summary: `${activeComparison} netto: ${formatCurrency(compareResults.netto)} | FR netto: ${formatCurrency(frResults.netto)} | Verschil: ${formatCurrency(frResults.netto - compareResults.netto, true)} | Parts: ${frResults.breakdown?.parts || '-'} | Vermogensbelasting ${activeComparison}: ${formatCurrency(compareResults.wealthTax)} | IFI FR: ${formatCurrency(frResults.wealthTax)}`,
+                  details: {
+                    comparison: activeComparison,
+                    compareBruto: compareResults.bruto,
+                    compareTax: compareResults.tax,
+                    compareNetto: compareResults.netto,
+                    compareWealthTax: compareResults.wealthTax,
+                    frBruto: frResults.bruto,
+                    frTax: frResults.tax,
+                    frNetto: frResults.netto,
+                    frWealthTax: frResults.wealthTax,
+                    parts: frResults.breakdown?.parts,
+                    delta: frResults.netto - compareResults.netto,
+                    isCouple: inputValues.isCouple,
+                    children: inputValues.children
+                  }
+                })
+              };
+            }
         } catch (error) { console.error("Fout in updateScenario:", error); displayError(`Fout berekening: ${error.message}.`); }
      }
 
@@ -584,3 +606,4 @@ document.getElementById('save-dossier-btn')?.addEventListener('click', function(
         alert('Deze functie werkt alleen binnen InfoFrankrijk.com');
     }
 });
+
